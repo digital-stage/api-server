@@ -1,0 +1,1 @@
+{"version":3,"file":"Payloads.js","sourceRoot":"/","sources":["types/Payloads.ts"],"names":[],"mappings":";;AACA,MAAM,QAAQ,GAAG;IACb,gBAAgB,EAAE,OAAO;IACzB,eAAe,EAAE,MAAM;CAC1B,CAAA;AACD,kBAAe,QAAQ,CAAC","sourcesContent":["\nconst Payloads = {\n    ConnectWithToken: \"token\",\n    ConnectAsRouter: \"user\"\n}\nexport default Payloads;\n"]}

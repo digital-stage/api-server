@@ -1,0 +1,61 @@
+{
+  "name": "@digitalstage/api-server",
+  "version": "0.0.1",
+  "description": "Stage and device orchestration server for headless audio clients",
+  "main": "index.js",
+  "scripts": {
+    "dev": "DEBUG=server.* nodemon --watch './src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "lint": "npx eslint ./src --ext .js,.ts --fix",
+    "build": "tsc",
+    "start": "DEBUG=server.* node ./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/digital-stage/server.git"
+  },
+  "keywords": [
+    "video",
+    "realtime",
+    "mediasoup",
+    "node"
+  ],
+  "author": "Tobias Hegemann <tobias.hegemann@googlemail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/digital-stage/server/issues"
+  },
+  "homepage": "https://github.com/digital-stage/server#readme",
+  "devDependencies": {
+    "@types/debug": "^4.1.5",
+    "@types/ioredis": "^4.22.1",
+    "@types/ip": "^1.1.0",
+    "@types/lodash": "^4.14.168",
+    "@types/mongodb": "^3.6.10",
+    "@types/node": "^14.14.35",
+    "@types/node-fetch": "^2.5.8",
+    "@typescript-eslint/eslint-plugin": "^4.18.0",
+    "eslint": "^7.22.0",
+    "eslint-config-airbnb-typescript": "^12.3.1",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-plugin-promise": "^4.3.1",
+    "nodemon": "^2.0.7",
+    "prettier": "^2.2.1",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.3"
+  },
+  "dependencies": {
+    "@sentry/integrations": "^6.2.3",
+    "@sentry/node": "^6.2.3",
+    "debug": "^4.3.1",
+    "dotenv": "^8.2.0",
+    "ioredis": "^4.24.3",
+    "ip": "^1.1.5",
+    "lodash": "^4.17.21",
+    "mongodb": "^3.6.5",
+    "node-fetch": "^2.6.1",
+    "teckos": "0.2.3",
+    "uncaught": "^0.0.5"
+  }
+}
