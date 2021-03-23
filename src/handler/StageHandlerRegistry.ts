@@ -1,5 +1,1 @@
-
-
-const StageHandler = {
-
-};
+const StageHandler = {};

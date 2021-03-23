@@ -11,7 +11,8 @@
     "es2015"
   ],
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

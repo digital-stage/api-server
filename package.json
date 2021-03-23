@@ -48,6 +48,7 @@
   "dependencies": {
     "@sentry/integrations": "^6.2.3",
     "@sentry/node": "^6.2.3",
+    "@sentry/tracing": "^6.2.3",
     "debug": "^4.3.1",
     "dotenv": "^8.2.0",
     "ioredis": "^4.24.3",

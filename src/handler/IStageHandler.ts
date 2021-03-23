@@ -7,9 +7,9 @@ import Stage from "../../types/model/Stage";
  * but with the necessary payload you'll need in your clients.
  */
 interface IStageHandler {
-    stageAdded: (stage: Stage) => Promise<Stage>;
-    stageChanged: (stage: Stage) => Promise<Stage>;
-    stageRemoved: (stage: Stage) => Promise<Stage>;
+  stageAdded: (stage: Stage) => Promise<Stage>;
+  stageChanged: (stage: Stage) => Promise<Stage>;
+  stageRemoved: (stage: Stage) => Promise<Stage>;
 }
 
 export default IStageHandler;

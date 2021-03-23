@@ -1,11 +1,11 @@
 import ITeckosSocket from "teckos/lib/types/ITeckosSocket";
+import { ITeckosProvider } from "teckos";
+import { Db } from "mongodb";
 import User from "../../../types/model/User";
 import Device from "../../../types/model/Device";
 import ClientEvents from "../../../types/ClientEvents";
 import Payloads from "../../../types/Payloads";
-import IStore, {TypeNames} from "../../store/IStore";
 import sendToUser from "../send/sendToUser";
-import {ITeckosProvider} from "teckos";
 import ServerEvents from "../../../types/ServerEvents";
 import logger from "../../logger";
 import StageMember from "../../../types/model/StageMember";
@@ -13,57 +13,151 @@ import Stage from "../../../types/model/Stage";
 import RemoteAudioTrack from "../../../types/model/RemoteAudioTrack";
 import Group from "../../../types/model/Group";
 import sendToStage from "../send/sendToStage";
+import Schema from "../../store/Schema";
 
-const {error} = logger("handleClientSocket");
+const { error } = logger("handleClientSocket");
 
-const handleClientSocket = (io: ITeckosProvider, store: IStore, socket: ITeckosSocket, user: User, initialDevice: Partial<Device>) => {
-    // Resolve actions that depends on others, but without permission checks - these are implemented inside the socket handlers
+const handleClientSocket = (
+  io: ITeckosProvider,
+  store: Db,
+  socket: ITeckosSocket,
+  user: User,
+  initialDevice: Partial<Device>
+) => {
+  // Resolve actions that depends on others, but without permission checks - these are implemented inside the socket handlers
+  // const joinStage = (userId: string, stageId: string) => {};
+  // const leaveStage = (userId: string) => {};
 
-    socket.on(ClientEvents.ChangeUser, (payload: Payloads.ChangeUser) => {
-        // Optimized for performance: first emit, then update
-        sendToUser(io, user.id, ServerEvents.UserChanged, payload as Payloads.UserChanged);
-        return store.update<User>(TypeNames.User, user.id, payload)
-            .catch(e => error(e));
-    });
+  socket.on(ClientEvents.ChangeUser, (payload: Payloads.ChangeUser) => {
+    // Optimized for performance: first emit, then update
+    sendToUser(
+      io,
+      user._id,
+      ServerEvents.UserChanged,
+      payload as Payloads.UserChanged
+    );
+    return store
+      .collection<User>(Schema.User)
+      .updateOne({ _id: user._id }, { $set: payload })
+      .catch((e) => error(e));
+  });
 
-    socket.on(ClientEvents.ChangeDevice, (payload: Payloads.ChangeDevice) => {
-        // Security check: first try to update then emit
-        return store.update(TypeNames.Device, payload.id, payload, {userId: user.id})
-            .then(() => sendToUser(io, user.id, ServerEvents.DeviceChanged, payload as Payloads.DeviceChanged))
-            .catch(e => error(e));
-    });
+  socket.on(ClientEvents.ChangeDevice, (payload: Payloads.ChangeDevice) => {
+    // Security check: first try to update then emit
+    return store
+      .collection<Device>(Schema.Device)
+      .updateOne({ _id: payload._id, userId: user._id }, { $set: payload })
+      .then(() =>
+        sendToUser(
+          io,
+          user._id,
+          ServerEvents.DeviceChanged,
+          payload as Payloads.DeviceChanged
+        )
+      )
+      .catch((e) => error(e));
+  });
 
-    socket.on(ClientEvents.CreateStage, (payload: Payloads.CreateStage) => {
-        // Check permissions
-        return store.read<User>(TypeNames.User, user.id, {canCreateStage: true})
-            .then(() => store.create<Stage>(TypeNames.Stage, {...payload, admins: [...payload.admins, user.id]}))
-            .then(stage => {
-                sendToUser(io, user.id, ServerEvents.DeviceChanged, stage as Payloads.StageAdded);
-                return stage;
+  socket.on(ClientEvents.CreateStage, (payload: Payloads.CreateStage) => {
+    // Check permissions
+    return store
+      .collection<User>(Schema.User)
+      .findOne({ _id: user._id, canCreateStage: true })
+      .then((foundUser) => {
+        if (!foundUser) throw new Error("No permissions to create a new stage");
+        return foundUser;
+      })
+      .then(() =>
+        store
+          .collection<Stage>(Schema.Stage)
+          .insertOne({ ...payload, admins: [...payload.admins, user._id] })
+          .then((result) => {
+            sendToUser(
+              io,
+              user._id,
+              ServerEvents.DeviceChanged,
+              result.ops[0] as Payloads.StageAdded
+            );
+            return result.ops[0];
+          })
+          // Create default group
+          .then((stage) =>
+            store.collection<Group>(Schema.Group).insertOne({
+              stageId: stage._id,
+              name: "Default",
+              color: "white",
+              description: "",
+              iconUrl: null,
+              muted: false,
+              volume: 1,
+              x: 0,
+              y: 0,
+              z: 0,
+              rX: 0,
+              rY: 0,
+              rZ: 0,
             })
-            // Create default group
-            .then(stage => store.create<Group>(TypeNames.Group, {stageId: stage.id}))
-            .then(group => sendToUser(io, user.id, ServerEvents.GroupAdded, group))
-            .catch(e => error(e));
-    });
+          )
+          .then((result) =>
+            sendToUser(
+              io,
+              user._id,
+              ServerEvents.GroupAdded,
+              result.ops[0] as Payloads.GroupAdded
+            )
+          )
+          .catch((e) => error(e))
+      );
+  });
 
-    socket.on(ClientEvents.ChangeStage, (payload: Payloads.ChangeStage) => {
-        // Check permissions
-        return store.update<Stage>(TypeNames.Stage, payload.id, payload, {admins: [user.id]})
-            .then(() => sendToStage(io, store, payload.id, ServerEvents.StageChanged, payload))
-            .catch(e => error(e));
-    });
+  socket.on(ClientEvents.ChangeStage, (payload: Payloads.ChangeStage) => {
+    // Check permissions
+    return store
+      .update<Stage>(TypeNames.Stage, payload.id, payload, {
+        admins: [user.id],
+      })
+      .then(() =>
+        sendToStage(io, store, payload.id, ServerEvents.StageChanged, payload)
+      )
+      .catch((e) => error(e));
+  });
 
-    socket.on(ClientEvents.RemoveStage, (payload: Payloads.RemoveStage) => {
-        // Check permissions
-        return store.delete<Stage>(TypeNames.Stage, payload, {admins: [user.id]})
-            .then(() => sendToStage(io, store, payload, ServerEvents.StageRemoved, payload))
-            .then(() => store.deleteMany<Group>(TypeNames.Group, {stageId: payload}))
-            .then(groupIds => groupIds.map(groupId => sendToStage(io, store, payload, ServerEvents.GroupRemoved, groupId)))
-            .then(() => store.deleteMany<StageMember>(TypeNames.StageMember, {stageId: payload}))
-            .then(stageMemberIds => stageMemberIds.map(stageMemberId => sendToStage(io, store, payload, ServerEvents.StageMemberRemoved, stageMemberId)))
-            .then(() => store.deleteMany<RemoteAudioTrack>(TypeNames.RemoteAudioTrack, {stageMemberId}))
-    });
-
-}
+  socket.on(ClientEvents.RemoveStage, (payload: Payloads.RemoveStage) => {
+    // Check permissions
+    return store
+      .delete<Stage>(TypeNames.Stage, payload, { admins: [user.id] })
+      .then(() =>
+        sendToStage(io, store, payload, ServerEvents.StageRemoved, payload)
+      )
+      .then(() =>
+        store.deleteMany<Group>(TypeNames.Group, { stageId: payload })
+      )
+      .then((groupIds) =>
+        groupIds.map((groupId) =>
+          sendToStage(io, store, payload, ServerEvents.GroupRemoved, groupId)
+        )
+      )
+      .then(() =>
+        store.deleteMany<StageMember>(TypeNames.StageMember, {
+          stageId: payload,
+        })
+      )
+      .then((stageMemberIds) =>
+        stageMemberIds.map((stageMemberId) =>
+          sendToStage(
+            io,
+            store,
+            payload,
+            ServerEvents.StageMemberRemoved,
+            stageMemberId
+          )
+        )
+      )
+      .then(() =>
+        store.deleteMany<RemoteAudioTrack>(TypeNames.RemoteAudioTrack, {
+          stageMemberId,
+        })
+      );
+  });
+};
 export default handleClientSocket;
