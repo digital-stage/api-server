@@ -1,0 +1,1 @@
+{"version":3,"file":"VolumeProperties.js","sourceRoot":"/","sources":["types/model/VolumeProperties.ts"],"names":[],"mappings":"","sourcesContent":["interface VolumeProperties {\n    volume: number\n    muted: boolean;\n}\n\nexport default VolumeProperties;"]}

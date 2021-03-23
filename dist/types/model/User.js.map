@@ -1,0 +1,1 @@
+{"version":3,"file":"User.js","sourceRoot":"/","sources":["types/model/User.ts"],"names":[],"mappings":"","sourcesContent":["import {UserId} from \"../IdTypes\";\n\ninterface User {\n    id: UserId;\n    name: string;\n\n    avatarUrl: string | null;\n\n    canCreateStage: boolean;\n}\n\nexport default User;"]}

@@ -1,0 +1,1 @@
+{"version":3,"file":"StageHandlerRegistry.js","sourceRoot":"/","sources":["src/handler/StageHandlerRegistry.ts"],"names":[],"mappings":"AAEA,MAAM,YAAY,GAAG,EAEpB,CAAC","sourcesContent":["\n\nconst StageHandler = {\n\n};\n"]}

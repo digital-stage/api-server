@@ -1,0 +1,1 @@
+{"version":3,"file":"ThreeDimensionalProperties.js","sourceRoot":"/","sources":["types/model/ThreeDimensionalProperties.ts"],"names":[],"mappings":"","sourcesContent":["interface ThreeDimensionalProperties {\n    x: number;\n    y: number;\n    z: number;\n    rX: number;\n    rY: number;\n    rZ: number;\n}\nexport default ThreeDimensionalProperties;"]}

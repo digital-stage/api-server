@@ -1,0 +1,1 @@
+{"version":3,"file":"Router.js","sourceRoot":"/","sources":["types/model/Router.ts"],"names":[],"mappings":"","sourcesContent":["import {RouterId} from \"../IdTypes\";\n\ninterface Router {\n    id: RouterId;\n\n    type: string;\n\n    [additional: string]: any;\n}\n\nexport default Router;\n"]}
