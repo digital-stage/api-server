@@ -2,12 +2,12 @@
   "name": "@digitalstage/api-server",
   "version": "0.0.1",
   "description": "Stage and device orchestration server for headless audio clients",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "dev": "DEBUG=server.* nodemon --watch './src/**/*.ts' --exec 'ts-node' src/index.ts",
-    "lint": "npx eslint ./src ./types --ext .js,.ts --fix",
+    "dev": "DEBUG=* nodemon --watch './src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "lint": "npx eslint ./src src/types --ext .js,.ts --fix",
     "build": "tsc",
-    "start": "DEBUG=server.* node ./dist/index.js"
+    "start": "DEBUG=* node ./dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -51,7 +51,7 @@
     "@sentry/tracing": "^6.2.3",
     "debug": "^4.3.1",
     "dotenv": "^8.2.0",
-    "ioredis": "^4.24.3",
+    "ioredis": "^4.24.4",
     "ip": "^1.1.5",
     "lodash": "^4.17.21",
     "mongodb": "^3.6.5",

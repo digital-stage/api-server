@@ -7,7 +7,7 @@ const ClientEvents = {
     ChangeDevice: "change-device",
     CreateStage: "create-stage",
     ChangeStage: "change-stage",
-    RemoveStage: "remove-stage"
+    RemoveStage: "remove-stage",
 };
 exports.default = ClientEvents;
 //# sourceMappingURL=ClientEvents.js.map

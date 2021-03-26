@@ -1,1 +1,0 @@
-{"version":3,"file":"IAuthentication.js","sourceRoot":"/","sources":["src/auth/IAuthentication.ts"],"names":[],"mappings":"","sourcesContent":["import { HttpRequest } from \"teckos/uws\";\nimport { User } from \"../types\";\n\nexport interface IAuthentication {\n  verifyWithToken(token: string): Promise<User>;\n\n  authorizeRequest(req: HttpRequest): Promise<User>;\n}\n"]}

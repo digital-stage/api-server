@@ -1,1 +1,1 @@
-{"version":3,"file":"LocalAudioTrack.js","sourceRoot":"/","sources":["types/model/LocalAudioTrack.ts"],"names":[],"mappings":"","sourcesContent":["interface LocalAudioTrack {\n    id: LocalAudioTrack;\n}\n\nexport default LocalAudioTrack;\n"]}
+{"version":3,"file":"LocalAudioTrack.js","sourceRoot":"/src/","sources":["types/model/LocalAudioTrack.ts"],"names":[],"mappings":"","sourcesContent":["interface LocalAudioTrack<IdType = string> {\n  _id: IdType;\n  deviceId: IdType;\n  userId: IdType;\n}\n\nexport default LocalAudioTrack;\n"]}

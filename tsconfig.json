@@ -4,7 +4,7 @@
     "target": "es6",
     "sourceMap": true,
     "inlineSources": true,
-    "sourceRoot": "/",
+    "sourceRoot": "/src",
     "outDir": "dist"
   },
   "lib": [
@@ -12,7 +12,6 @@
   ],
   "include": [
     "src/**/*.ts",
-    "types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
