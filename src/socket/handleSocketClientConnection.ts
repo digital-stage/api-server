@@ -25,8 +25,10 @@ const handleSocketClientConnection = async (
     );
     if (device) {
       // Update status
+      trace(`Found existing device with uuid ${initialDevice.uuid}`);
       await distributor.updateDevice(user._id, device._id, {
         online: true,
+        lastLoginAt: new Date(),
       });
     }
   }
@@ -36,14 +38,17 @@ const handleSocketClientConnection = async (
       userId: user._id,
     });
   }
-  Distributor.sendToDevice(socket, ServerDeviceEvents.LocalDeviceReady, device);
 
   socket.on("disconnect", () => {
     if (device.uuid) {
+      trace(`Set device ${device._id} offline`);
       return distributor.updateDevice(user._id, device._id, { online: false });
     }
+    trace(`Removing device ${device._id}`);
     return distributor.deleteDevice(device._id);
   });
+
+  Distributor.sendToDevice(socket, ServerDeviceEvents.LocalDeviceReady, device);
 
   // USER
   socket.on(
@@ -64,9 +69,11 @@ const handleSocketClientConnection = async (
     ClientDeviceEvents.ChangeDevice,
     (payload: ClientDevicePayloads.ChangeDevice) => {
       trace(`${user.name}: ${ClientDeviceEvents.ChangeDevice}(${payload})`);
+      const { _id, ...data } = payload;
+      const id = new ObjectId(_id);
       return distributor
-        .updateDevice(new ObjectId(user._id), new ObjectId(payload._id), {
-          ...payload,
+        .updateDevice(new ObjectId(user._id), id, {
+          ...data,
           availableSoundCardIds: payload.availableSoundCardIds,
         })
         .catch((e) => error(e));
@@ -121,12 +128,13 @@ const handleSocketClientConnection = async (
     ClientDeviceEvents.ChangeStage,
     (payload: ClientDevicePayloads.ChangeStage) => {
       trace(`${user.name}: ${ClientDeviceEvents.ChangeStage}(${payload})`);
-      const id = new ObjectId(payload._id);
+      const { _id, ...data } = payload;
+      const id = new ObjectId(_id);
       return distributor
         .readAdministratedStage(user._id, id)
         .then((stage) => {
           if (stage) {
-            return distributor.updateStage(id, payload);
+            return distributor.updateStage(id, data);
           }
           throw new Error(
             `User ${user.name} has no privileges to update the stage ${id}`
@@ -189,7 +197,8 @@ const handleSocketClientConnection = async (
     ClientDeviceEvents.ChangeGroup,
     (payload: ClientDevicePayloads.ChangeGroup) => {
       trace(`${user.name}: ${ClientDeviceEvents.ChangeGroup}(${payload})`);
-      const id = new ObjectId(payload._id);
+      const { _id, ...data } = payload;
+      const id = new ObjectId(_id);
       return distributor
         .readGroup(id)
         .then((group) => {
@@ -198,9 +207,7 @@ const handleSocketClientConnection = async (
               .readAdministratedStage(user._id, group.stageId)
               .then((stage) => {
                 if (stage) {
-                  return distributor.updateGroup(id, {
-                    ...payload,
-                  });
+                  return distributor.updateGroup(id, data);
                 }
                 throw new Error(
                   `User ${user.name} has no privileges to change group ${group.name}`
@@ -316,7 +323,8 @@ const handleSocketClientConnection = async (
       trace(
         `${user.name}: ${ClientDeviceEvents.ChangeStageMember}(${payload})`
       );
-      const id = new ObjectId(payload._id);
+      const { _id, ...data } = payload;
+      const id = new ObjectId(_id);
       return distributor
         .readStageMember(id)
         .then((stageMember) => {
@@ -325,7 +333,7 @@ const handleSocketClientConnection = async (
               .readManagedStage(user._id, stageMember.stageId)
               .then((stage) => {
                 if (stage) {
-                  return distributor.updateStageMember(id, payload);
+                  return distributor.updateStageMember(id, data);
                 }
                 throw new Error(
                   `User ${user.name} has no privileges to change stage member ${id}`
@@ -469,9 +477,10 @@ const handleSocketClientConnection = async (
       trace(
         `${user.name}: ${ClientDeviceEvents.ChangeLocalAudioTrack}(${payload})`
       );
-      const id = new ObjectId(payload._id);
+      const { _id, ...data } = payload;
+      const id = new ObjectId(_id);
       return distributor
-        .updateLocalAudioTrack(user._id, id, payload)
+        .updateLocalAudioTrack(user._id, id, data)
         .catch((e) => error(e));
     }
   );
@@ -509,9 +518,10 @@ const handleSocketClientConnection = async (
       trace(
         `${user.name}: ${ClientDeviceEvents.ChangeLocalVideoTrack}(${payload})`
       );
-      const id = new ObjectId(payload._id);
+      const { _id, ...data } = payload;
+      const id = new ObjectId(_id);
       return distributor
-        .updateLocalVideoTrack(user._id, id, payload)
+        .updateLocalVideoTrack(user._id, id, data)
         .catch((e) => error(e));
     }
   );
@@ -534,7 +544,8 @@ const handleSocketClientConnection = async (
       trace(
         `${user.name}: ${ClientDeviceEvents.ChangeRemoteAudioTrack}(${payload})`
       );
-      const id = new ObjectId(payload._id);
+      const { _id, ...data } = payload;
+      const id = new ObjectId(_id);
       return distributor
         .readRemoteAudioTrack(id)
         .then((remoteAudioTrack) => {
@@ -543,7 +554,7 @@ const handleSocketClientConnection = async (
               .readManagedStage(user._id, remoteAudioTrack.stageId)
               .then((stage) => {
                 if (stage) {
-                  return distributor.updateRemoteAudioTrack(id, payload);
+                  return distributor.updateRemoteAudioTrack(id, data);
                 }
                 throw new Error(
                   `User ${user.name} has no privileges to change remote audio track ${id}`

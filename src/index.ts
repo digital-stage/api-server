@@ -1,6 +1,7 @@
 import { UWSProvider } from "teckos";
 import * as uWS from "teckos/uws";
 import { MongoClient } from "mongodb";
+import { address } from "ip";
 import { MONGO_DB, MONGO_URL, PORT, REDIS_URL } from "./env";
 import useLogger from "./useLogger";
 import handleSocketConnection from "./socket/handleSocketConnection";
@@ -29,9 +30,10 @@ let mongoClient = new MongoClient(MONGO_URL, {
 });
 
 const start = async () => {
+  const apiServer: string = `${address()}:${PORT}`;
   mongoClient = await mongoClient.connect();
   const db = mongoClient.db(MONGO_DB);
-  const distributor = new Distributor(io, db);
+  const distributor = new Distributor(io, db, apiServer);
   io.onConnection((socket) => handleSocketConnection(distributor, socket));
   return io.listen(port);
 };

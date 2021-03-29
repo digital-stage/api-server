@@ -60,10 +60,13 @@ class Distributor extends EventEmitter.EventEmitter {
 
   private readonly _io: ITeckosProvider;
 
-  constructor(socket: ITeckosProvider, database: Db) {
+  private readonly _apiServer: string;
+
+  constructor(socket: ITeckosProvider, database: Db, apiServer: string) {
     super();
     this._io = socket;
     this._db = database;
+    this._apiServer = apiServer;
   }
 
   public db(): Db {
@@ -966,9 +969,48 @@ class Distributor extends EventEmitter.EventEmitter {
 
   createDevice(init: Omit<Device<ObjectId>, "_id">): Promise<Device<ObjectId>> {
     return this._db
-      .collection(Collections.DEVICES)
-      .insertOne(init)
+      .collection<Device<ObjectId>>(Collections.DEVICES)
+      .insertOne({
+        uuid: null,
+        type: "unknown",
+        availableSoundCardIds: [],
+        soundCardId: null,
+        apiServer: this._apiServer,
+        requestSession: false,
+        userId: init.userId,
+        canAudio: false,
+        canVideo: false,
+        receiveAudio: false,
+        receiveVideo: false,
+        ...init,
+        online: true,
+        lastLoginAt: new Date(),
+        createdAt: new Date(),
+        _id: undefined,
+      })
       .then((result) => result.ops[0])
+      .then((device) => {
+        if (device.requestSession) {
+          trace("Generating UUID session for new device");
+          this._db
+            .collection<Device<ObjectId>>(Collections.DEVICES)
+            .updateOne(
+              { _id: device._id },
+              {
+                $set: {
+                  uuid: device._id.toHexString(),
+                },
+              }
+            )
+            .catch((e) => error(e));
+          return {
+            ...device,
+            uuid: device._id.toHexString(),
+          };
+        }
+        trace("no generation");
+        return device;
+      })
       .then((device) => {
         this.emit(ServerDeviceEvents.DeviceAdded, device);
         this.sendToUser(init.userId, ServerDeviceEvents.DeviceAdded, device);
@@ -1021,7 +1063,12 @@ class Distributor extends EventEmitter.EventEmitter {
     this.sendToUser(userId, ServerDeviceEvents.DeviceChanged, payload);
     return this._db
       .collection<Device<ObjectId>>(Collections.DEVICES)
-      .updateOne({ _id: id }, { $set: update })
+      .updateOne(
+        { _id: id },
+        {
+          $set: update,
+        }
+      )
       .then((result) => {
         if (result.modifiedCount > 0) {
           this.emit(ServerDeviceEvents.DeviceChanged, payload);
