@@ -20,7 +20,7 @@
     "node"
   ],
   "author": "Tobias Hegemann <tobias.hegemann@googlemail.com>",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "bugs": {
     "url": "https://github.com/digital-stage/server/issues"
   },
