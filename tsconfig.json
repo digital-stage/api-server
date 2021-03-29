@@ -4,7 +4,7 @@
     "target": "es6",
     "sourceMap": true,
     "inlineSources": true,
-    "sourceRoot": "/src",
+    "sourceRoot": "/",
     "outDir": "dist"
   },
   "lib": [
