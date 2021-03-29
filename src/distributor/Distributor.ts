@@ -1,7 +1,7 @@
-import {Db, ObjectId, OptionalId} from "mongodb";
-import {ITeckosProvider, ITeckosSocket} from "teckos";
+import { Db, ObjectId } from "mongodb";
+import { ITeckosProvider, ITeckosSocket } from "teckos";
 import * as EventEmitter from "events";
-import {DEBUG_EVENTS, DEBUG_PAYLOAD} from "../env";
+import { DEBUG_EVENTS, DEBUG_PAYLOAD } from "../env";
 import useLogger from "../useLogger";
 import generateColor from "../utils/generateColor";
 import Router from "../types/model/Router";
@@ -23,17 +23,17 @@ import ServerDeviceEvents from "../types/ServerDeviceEvents";
 import LocalAudioTrack from "../types/model/LocalAudioTrack";
 import LocalVideoTrack from "../types/model/LocalVideoTrack";
 import StagePackage from "../types/model/StagePackage";
-import Payloads from "../types/Payloads";
 import ThreeDimensionalProperties, {
   DefaultThreeDimensionalProperties,
 } from "../types/model/ThreeDimensionalProperties";
 import InitialStagePackage from "../types/model/InitialStagePackage";
-import {DefaultVolumeProperties} from "../types/model/VolumeProperties";
-import IStageHandler from "../handler/IStageHandler";
+import { DefaultVolumeProperties } from "../types/model/VolumeProperties";
+import getDistance from "../utils/getDistance";
+import ServerRouterEvents from "../types/ServerRouterEvents";
+import ServerDevicePayloads from "../types/ServerDevicePayloads";
+import ServerRouterPayloads from "../types/ServerRouterPayloads";
 
-const {error, trace} = useLogger("distributor");
-
-const TRACE: boolean = true;
+const { error, trace } = useLogger("distributor");
 
 export enum Collections {
   ROUTERS = "r",
@@ -56,9 +56,7 @@ export enum Collections {
 }
 
 class Distributor extends EventEmitter.EventEmitter {
-  private _stageHandlers: IStageHandler[] = [];
-
-  private _db: Db;
+  private readonly _db: Db;
 
   private readonly _io: ITeckosProvider;
 
@@ -68,137 +66,131 @@ class Distributor extends EventEmitter.EventEmitter {
     this._db = database;
   }
 
-  public addStageHandler(stageHandler: IStageHandler) {
-    this._stageHandlers.push(stageHandler);
-  }
-
-  public removeStageHandler(stageHandler: IStageHandler) {
-    this._stageHandlers = this._stageHandlers.filter(
-      (handler) => handler !== stageHandler
-    );
+  public db(): Db {
+    return this._db;
   }
 
   public prepareStore(): Promise<any> {
     return Promise.all([
       this._db
         .collection<Router>(Collections.ROUTERS)
-        .createIndex({server: 1}),
+        .createIndex({ server: 1 }),
       this._db
         .collection<RemoteAudioTrack>(Collections.REMOTE_AUDIO_TRACKS)
-        .createIndex({localAudioTrackId: 1}),
+        .createIndex({ localAudioTrackId: 1 }),
       this._db
         .collection<RemoteVideoTrack>(Collections.REMOTE_VIDEO_TRACKS)
-        .createIndex({localAudioTrackId: 1}),
-      this._db.collection<Stage>(Collections.STAGES).createIndex({admins: 1}),
+        .createIndex({ localAudioTrackId: 1 }),
+      this._db.collection<Stage>(Collections.STAGES).createIndex({ admins: 1 }),
       this._db
         .collection<StageMember>(Collections.STAGE_MEMBERS)
-        .createIndex({userId: 1}),
+        .createIndex({ userId: 1 }),
       this._db
         .collection<SoundCard>(Collections.SOUND_CARDS)
-        .createIndex({userId: 1}),
+        .createIndex({ userId: 1 }),
       this._db
         .collection<Device>(Collections.DEVICES)
-        .createIndex({userId: 1}),
+        .createIndex({ userId: 1 }),
       this._db
         .collection<Device>(Collections.DEVICES)
-        .createIndex({server: 1}),
+        .createIndex({ server: 1 }),
       this._db
         .collection<StageMember>(Collections.STAGE_MEMBERS)
-        .createIndex({stageId: 1}),
+        .createIndex({ stageId: 1 }),
       this._db
         .collection<RemoteAudioTrack>(Collections.REMOTE_AUDIO_TRACKS)
-        .createIndex({stageMemberId: 1}),
+        .createIndex({ stageMemberId: 1 }),
       this._db
         .collection<RemoteVideoTrack>(Collections.REMOTE_VIDEO_TRACKS)
-        .createIndex({stageMemberId: 1}),
+        .createIndex({ stageMemberId: 1 }),
       this._db
         .collection<Group>(Collections.GROUPS)
-        .createIndex({stageId: 1}),
+        .createIndex({ stageId: 1 }),
       this._db
         .collection<Stage>(Collections.STAGES)
-        .createIndex({ovServer: 1}),
+        .createIndex({ ovServer: 1 }),
       this._db
         .collection<StageMember>(Collections.STAGE_MEMBERS)
-        .createIndex({stageId: 1}),
+        .createIndex({ stageId: 1 }),
       this._db
         .collection<CustomGroupVolume>(Collections.CUSTOM_GROUP_VOLUMES)
-        .createIndex({userId: 1, groupId: 1}),
+        .createIndex({ userId: 1, groupId: 1 }),
       this._db
         .collection<CustomGroupPosition>(Collections.CUSTOM_GROUP_POSITIONS)
-        .createIndex({userId: 1, groupId: 1}),
+        .createIndex({ userId: 1, groupId: 1 }),
       this._db
         .collection<CustomStageMemberVolume>(
           Collections.CUSTOM_STAGE_MEMBER_VOLUMES
         )
-        .createIndex({userId: 1, stageMemberId: 1}),
+        .createIndex({ userId: 1, stageMemberId: 1 }),
       this._db
         .collection<CustomStageMemberPosition>(
           Collections.CUSTOM_STAGE_MEMBER_POSITIONS
         )
-        .createIndex({userId: 1, stageMemberId: 1}),
+        .createIndex({ userId: 1, stageMemberId: 1 }),
       this._db
         .collection<RemoteVideoTrack>(Collections.REMOTE_VIDEO_TRACKS)
-        .createIndex({stageId: 1}),
+        .createIndex({ stageId: 1 }),
       this._db
         .collection<RemoteAudioTrack>(Collections.REMOTE_AUDIO_TRACKS)
-        .createIndex({stageId: 1}),
+        .createIndex({ stageId: 1 }),
       this._db
         .collection<CustomRemoteAudioTrackVolume>(
           Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
         )
-        .createIndex({userId: 1, ObjectId: 1}),
+        .createIndex({ userId: 1, ObjectId: 1 }),
       this._db
         .collection<CustomRemoteAudioTrackPosition>(
           Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
         )
-        .createIndex({userId: 1, ObjectId: 1}),
+        .createIndex({ userId: 1, ObjectId: 1 }),
       this._db
         .collection<Group>(Collections.GROUPS)
-        .createIndex({stageId: 1}),
+        .createIndex({ stageId: 1 }),
       this._db
         .collection<StageMember>(Collections.STAGE_MEMBERS)
-        .createIndex({groupId: 1}),
+        .createIndex({ groupId: 1 }),
       this._db
         .collection<CustomGroupVolume>(Collections.CUSTOM_GROUP_VOLUMES)
-        .createIndex({groupId: 1}),
+        .createIndex({ groupId: 1 }),
       this._db
         .collection<CustomGroupPosition>(Collections.CUSTOM_GROUP_POSITIONS)
-        .createIndex({groupId: 1}),
+        .createIndex({ groupId: 1 }),
       this._db
         .collection<Device>(Collections.DEVICES)
-        .createIndex({userId: 1, soundCardNames: 1}),
+        .createIndex({ userId: 1, soundCardNames: 1 }),
       this._db
         .collection<CustomStageMemberVolume>(
           Collections.CUSTOM_STAGE_MEMBER_VOLUMES
         )
-        .createIndex({stageMemberId: 1}),
+        .createIndex({ stageMemberId: 1 }),
       this._db
         .collection<CustomStageMemberPosition>(
           Collections.CUSTOM_STAGE_MEMBER_POSITIONS
         )
-        .createIndex({stageMemberId: 1}),
+        .createIndex({ stageMemberId: 1 }),
       this._db
         .collection<RemoteVideoTrack>(Collections.REMOTE_VIDEO_TRACKS)
-        .createIndex({stageMemberId: 1}),
+        .createIndex({ stageMemberId: 1 }),
       this._db
         .collection<RemoteAudioTrack>(Collections.REMOTE_AUDIO_TRACKS)
-        .createIndex({stageMemberId: 1}),
+        .createIndex({ stageMemberId: 1 }),
       this._db
         .collection<StageMember>(Collections.STAGE_MEMBERS)
-        .createIndex({userId: 1}),
+        .createIndex({ userId: 1 }),
       this._db
         .collection<Group>(Collections.GROUPS)
-        .createIndex({stageId: 1}),
+        .createIndex({ stageId: 1 }),
       this._db
         .collection<SoundCard>(Collections.SOUND_CARDS)
-        .createIndex({userId: 1}),
+        .createIndex({ userId: 1 }),
       this._db
         .collection<StageMember>(Collections.STAGE_MEMBERS)
-        .createIndex({stageId: 1}),
-      this._db.collection<User>(Collections.USERS).createIndex({stageId: 1}),
+        .createIndex({ stageId: 1 }),
+      this._db.collection<User>(Collections.USERS).createIndex({ stageId: 1 }),
       this._db
         .collection<Group>(Collections.GROUPS)
-        .createIndex({stageId: 1}),
+        .createIndex({ stageId: 1 }),
     ]);
   }
 
@@ -206,19 +198,15 @@ class Distributor extends EventEmitter.EventEmitter {
     return Promise.all([
       this.readDevicesByApiServer(serverAddress).then((devices) =>
         devices.map((device) =>
-          this.deleteDevice(device._id).then(
-            () =>
-              TRACE &&
-              trace(`cleanUp(${serverAddress}): Removed device ${device._id}`)
+          this.deleteDevice(device._id).then(() =>
+            trace(`cleanUp(${serverAddress}): Removed device ${device._id}`)
           )
         )
       ),
       this.readRoutersByServer(serverAddress).then((routers) =>
         routers.map((router) =>
-          this.deleteRouter(router._id).then(
-            () =>
-              TRACE &&
-              trace(`cleanUp(${serverAddress}): Removed router ${router._id}`)
+          this.deleteRouter(router._id).then(() =>
+            trace(`cleanUp(${serverAddress}): Removed router ${router._id}`)
           )
         )
       ),
@@ -226,16 +214,22 @@ class Distributor extends EventEmitter.EventEmitter {
   };
 
   createRouter(
-    initial: Router<ObjectId> & { _id: undefined }
+    initial: Omit<Router<ObjectId>, "_id">
   ): Promise<Router<ObjectId>> {
-    TRACE &&
     trace(`createRouter(): Creating router with initial data: ${initial}`);
     return this._db
       .collection<Router<ObjectId>>(Collections.ROUTERS)
-      .insertOne({types: {}, ...initial, _id: undefined})
+      .insertOne(initial as any)
       .then((result) => result.ops[0])
       .then((router) => {
         this.emit(ServerDeviceEvents.RouterAdded, router);
+        this.sendToAll(ServerDeviceEvents.RouterAdded, router);
+        // Async:
+        this.readUnmanagedStages()
+          .then((stages) =>
+            Promise.all(stages.map((stage) => this.serveStage(stage)))
+          )
+          .catch((e) => error(e));
         return router;
       });
   }
@@ -246,20 +240,41 @@ class Distributor extends EventEmitter.EventEmitter {
     });
   }
 
-  readRoutersAvailableForType(...type: string[]): Promise<Router<ObjectId>[]> {
-    const field = `types.${type}`;
-    return this._db
-      .collection<Router<ObjectId>>(Collections.ROUTERS)
-      .find({field: {$gt: 0}})
-      .toArray();
-  }
-
   readRouters(): Promise<Router<ObjectId>[]> {
     return this._db
       .collection<Router<ObjectId>>(Collections.ROUTERS)
       .find()
       .toArray();
   }
+
+  readRouterByTypeNearLocation = (
+    type: string,
+    preferredPosition?: { lat: number; lng: number }
+  ): Promise<Router<ObjectId>> =>
+    this._db
+      .collection<Router<ObjectId>>(Collections.ROUTERS)
+      .find({ [`types.${type}`]: { $gt: 0 } })
+      .toArray()
+      .then((routers) => {
+        if (routers.length > 1) {
+          let router = routers[0];
+          if (preferredPosition) {
+            let nearest = getDistance(preferredPosition, router.position);
+            routers.forEach((r) => {
+              const n = getDistance(preferredPosition, r.positon);
+              if (n < nearest) {
+                nearest = n;
+                router = r;
+              }
+            });
+          }
+          return router;
+        }
+        if (routers.length === 1) {
+          return routers[0];
+        }
+        throw new Error("No router available");
+      });
 
   readRoutersByServer(serverAddress: string): Promise<Router<ObjectId>[]> {
     return this._db
@@ -276,10 +291,14 @@ class Distributor extends EventEmitter.EventEmitter {
   ): Promise<any> {
     return this._db
       .collection<Router<ObjectId>>(Collections.ROUTERS)
-      .updateOne({_id: id}, {$set: update})
+      .updateOne({ _id: id }, { $set: update })
       .then((result) => {
         if (result.matchedCount > 0) {
           this.emit(ServerDeviceEvents.RouterChanged, {
+            ...update,
+            _id: id,
+          });
+          this.sendToAll(ServerDeviceEvents.RouterChanged, {
             ...update,
             _id: id,
           });
@@ -291,10 +310,11 @@ class Distributor extends EventEmitter.EventEmitter {
   deleteRouter(id: ObjectId): Promise<any> {
     return this._db
       .collection<Router<ObjectId>>(Collections.ROUTERS)
-      .deleteOne({_id: id})
+      .deleteOne({ _id: id })
       .then((result) => {
         if (result.deletedCount > 0) {
           this.emit(ServerDeviceEvents.RouterRemoved, id);
+          this.sendToAll(ServerDeviceEvents.RouterRemoved, id);
         }
         throw new Error(`Could not find and delete router ${id}`);
       });
@@ -308,7 +328,7 @@ class Distributor extends EventEmitter.EventEmitter {
     // Has the user online devices?
     return this._db
       .collection<User<ObjectId>>(Collections.USERS)
-      .findOne({_id: userId}, {projection: {stageMemberId: 1}})
+      .findOne({ _id: userId }, { projection: { stageMemberId: 1 } })
       .then((user) => {
         if (user.stageMemberId) {
           // Use is inside stage
@@ -340,7 +360,7 @@ class Distributor extends EventEmitter.EventEmitter {
   ): Promise<LocalAudioTrack<ObjectId>> {
     return this._db
       .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
-      .insertOne({...initial, _id: undefined})
+      .insertOne({ ...initial, _id: undefined })
       .then((result) => result.ops[0])
       .then((localAudioTrack: LocalAudioTrack<ObjectId>) => {
         this.emit(ServerDeviceEvents.LocalAudioTrackAdded, localAudioTrack);
@@ -366,10 +386,9 @@ class Distributor extends EventEmitter.EventEmitter {
                   online: true,
                 });
               }
-              // throw new Error("User is not inside a stage");
-            } else {
-              throw new Error(`Could not find the user ${initial.userId}`);
+              throw new Error("User is not inside a stage");
             }
+            throw new Error(`Could not find the user ${initial.userId}`);
           })
           .then(() => localAudioTrack);
       });
@@ -386,7 +405,9 @@ class Distributor extends EventEmitter.EventEmitter {
   updateLocalAudioTrack(
     userId: ObjectId,
     id: ObjectId,
-    update: Partial<Omit<LocalAudioTrack<ObjectId>, "_id">>
+    update: Partial<
+      Omit<LocalAudioTrack<ObjectId>, "_id" | "userId" | "deviceId">
+    >
   ): Promise<void> {
     // Broadcast before validation (safe, since only user is affected here)
     const payload = {
@@ -414,21 +435,24 @@ class Distributor extends EventEmitter.EventEmitter {
               Collections.REMOTE_AUDIO_TRACKS
             )
             .findOneAndUpdate(
-              {localAudioTrackId: id},
-              {$set: update},
-              {projection: {_id: 1, stageId: 1}}
+              { localAudioTrackId: id },
+              { $set: update },
+              { projection: { _id: 1, stageId: 1 } }
             )
-            .then((result) => {
-              if (result) {
+            .then((result2) => {
+              if (result2 && result2.ok) {
                 return this.sendToJoinedStageMembers(
-                  result.value.stageId,
+                  result2.value.stageId,
                   ServerDeviceEvents.RemoteAudioTrackChanged,
                   {
                     ...update,
-                    _id: result.value._id,
+                    _id: result2.value._id,
                   }
                 );
               }
+              throw new Error(
+                `Could not find and update the local audio track ${id}`
+              );
             });
         }
         throw new Error(`Could not find and update local audio track ${id}`);
@@ -456,11 +480,14 @@ class Distributor extends EventEmitter.EventEmitter {
               {
                 localAudioTrackId: id,
               },
-              {projection: {_id: 1}}
+              { projection: { _id: 1 } }
             )
             .then((remoteAudioTrack) => {
               if (remoteAudioTrack)
                 return this.deleteRemoteAudioTrack(remoteAudioTrack._id);
+              throw new Error(
+                `Could not find and delete remote audio track ${remoteAudioTrack._id}`
+              );
             });
         }
         throw new Error(`Could not find and delete local audio track ${id}`);
@@ -472,7 +499,7 @@ class Distributor extends EventEmitter.EventEmitter {
   ): Promise<LocalVideoTrack<ObjectId>> {
     return this._db
       .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
-      .insertOne({...initial, _id: undefined})
+      .insertOne({ ...initial, _id: undefined })
       .then((result) => result.ops[0])
       .then((localVideoTrack: LocalVideoTrack<ObjectId>) => {
         this.emit(ServerDeviceEvents.LocalVideoTrackAdded, localVideoTrack);
@@ -498,7 +525,7 @@ class Distributor extends EventEmitter.EventEmitter {
                   online: true,
                 });
               }
-              // throw new Error("User is not inside a stage");
+              throw new Error("User is not inside a stage");
             } else {
               throw new Error(`Could not find the user ${initial.userId}`);
             }
@@ -546,21 +573,24 @@ class Distributor extends EventEmitter.EventEmitter {
               Collections.REMOTE_VIDEO_TRACKS
             )
             .findOneAndUpdate(
-              {ObjectId: id},
-              {$set: update},
-              {projection: {_id: 1, stageId: 1}}
+              { ObjectId: id },
+              { $set: update },
+              { projection: { _id: 1, stageId: 1 } }
             )
-            .then((result) => {
-              if (result) {
+            .then((result2) => {
+              if (result2) {
                 return this.sendToJoinedStageMembers(
-                  result.value.stageId,
+                  result2.value.stageId,
                   ServerDeviceEvents.RemoteVideoTrackChanged,
                   {
                     ...update,
-                    _id: result.value._id,
+                    _id: result2.value._id,
                   }
                 );
               }
+              throw new Error(
+                `Could not find and update remote video track ${result2.value._id}`
+              );
             });
         }
         throw new Error(`Could not find and update local video track ${id}`);
@@ -588,12 +618,15 @@ class Distributor extends EventEmitter.EventEmitter {
               {
                 localVideoTrackId: id,
               },
-              {projection: {_id: 1}}
+              { projection: { _id: 1 } }
             )
             .then((remoteVideoTrack) => {
               if (remoteVideoTrack) {
                 return this.deleteRemoteVideoTrack(remoteVideoTrack._id);
               }
+              throw new Error(
+                `Could not find and delete remote video track ${remoteVideoTrack._id}`
+              );
             });
         }
         throw new Error(`Could not find and delete local video track ${id}`);
@@ -623,7 +656,7 @@ class Distributor extends EventEmitter.EventEmitter {
         return this.sendToJoinedStageMembers(
           initial.stageId,
           ServerDeviceEvents.RemoteAudioTrackAdded,
-          remoteAudioTrack // as Payloads.RemoteAudioTrackAdded
+          remoteAudioTrack // as DevicePayloads.RemoteAudioTrackAdded
         ).then(() => remoteAudioTrack);
       });
   }
@@ -640,7 +673,7 @@ class Distributor extends EventEmitter.EventEmitter {
     id: ObjectId,
     update: Partial<Omit<RemoteAudioTrack<ObjectId>, "_id">>
   ): Promise<void> {
-    const {_id, localAudioTrackId, userId, ...secureUpdate} = update;
+    const { _id, localAudioTrackId, userId, ...secureUpdate } = update as any;
     return this._db
       .collection<RemoteAudioTrack<ObjectId>>(Collections.REMOTE_AUDIO_TRACKS)
       .findOneAndUpdate(
@@ -650,7 +683,7 @@ class Distributor extends EventEmitter.EventEmitter {
         {
           $set: secureUpdate,
         },
-        {projection: {stageId: 1}}
+        { projection: { stageId: 1 } }
       )
       .then(async (result) => {
         if (result.value) {
@@ -669,14 +702,14 @@ class Distributor extends EventEmitter.EventEmitter {
       });
   }
 
-  deleteRemoteAudioTrack(id: ObjectId): Promise<void> {
+  deleteRemoteAudioTrack(id: ObjectId): Promise<any> {
     return this._db
       .collection<RemoteAudioTrack<ObjectId>>(Collections.REMOTE_AUDIO_TRACKS)
       .findOneAndDelete(
         {
           _id: id,
         },
-        {projection: {stageId: 1}}
+        { projection: { stageId: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -691,7 +724,7 @@ class Distributor extends EventEmitter.EventEmitter {
               .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
                 Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
               )
-              .find({remoteAudioTrackId: id}, {projection: {_id: true}})
+              .find({ remoteAudioTrackId: id }, { projection: { _id: true } })
               .toArray()
               .then((customizedItems) =>
                 customizedItems.map((customizedItem) =>
@@ -702,15 +735,14 @@ class Distributor extends EventEmitter.EventEmitter {
               .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
                 Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
               )
-              .find({remoteAudioTrackId: id}, {projection: {_id: true}})
+              .find({ remoteAudioTrackId: id }, { projection: { _id: true } })
               .toArray()
               .then((customizedItems) =>
                 customizedItems.map((customizedItem) =>
                   this.deleteCustomRemoteAudioTrackVolume(customizedItem._id)
                 )
               ),
-          ]).then(() => {
-          });
+          ]);
         }
         throw new Error(`Could not find and delete remote audio track ${id}`);
       });
@@ -729,8 +761,7 @@ class Distributor extends EventEmitter.EventEmitter {
         userId: initialTrack.userId,
         type: initialTrack.type,
         online: initialTrack.online,
-        _id: undefined,
-      })
+      } as any)
       .then((result) => result.ops[0])
       .then((producer) => {
         this.emit(ServerDeviceEvents.RemoteVideoTrackAdded, producer);
@@ -754,7 +785,7 @@ class Distributor extends EventEmitter.EventEmitter {
     id: ObjectId,
     update: Partial<Omit<RemoteVideoTrack<ObjectId>, "_id">>
   ): Promise<void> {
-    const {_id, localVideoTrackId, userId, ...secureUpdate} = update;
+    const { localVideoTrackId, userId, ...secureUpdate } = update;
     return this._db
       .collection<RemoteVideoTrack<ObjectId>>(Collections.REMOTE_VIDEO_TRACKS)
       .findOneAndUpdate(
@@ -764,7 +795,7 @@ class Distributor extends EventEmitter.EventEmitter {
         {
           $set: secureUpdate,
         },
-        {projection: {stageId: 1}}
+        { projection: { stageId: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -790,7 +821,7 @@ class Distributor extends EventEmitter.EventEmitter {
         {
           _id: id,
         },
-        {projection: {stageId: 1}}
+        { projection: { stageId: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -806,8 +837,10 @@ class Distributor extends EventEmitter.EventEmitter {
   }
 
   createUser(
-    initial: Omit<User<ObjectId>,
-      "_id" | "stageId" | "stageMemberId" | "groupId">
+    initial: Omit<
+      User<ObjectId>,
+      "_id" | "stageId" | "stageMemberId" | "groupId"
+    >
   ): Promise<User<ObjectId>> {
     return this._db
       .collection<User<ObjectId>>(Collections.USERS)
@@ -828,13 +861,13 @@ class Distributor extends EventEmitter.EventEmitter {
   readUser(id: ObjectId): Promise<User<ObjectId> | null> {
     return this._db
       .collection<User<ObjectId>>(Collections.USERS)
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   readUserByUid(uid: string): Promise<User<ObjectId> | null> {
     return this._db
       .collection<User<ObjectId>>(Collections.USERS)
-      .findOne({uid});
+      .findOne({ uid });
   }
 
   updateUser(
@@ -842,7 +875,7 @@ class Distributor extends EventEmitter.EventEmitter {
     update: Partial<Omit<User<ObjectId>, "_id">>
   ): Promise<void> {
     // Broadcast before validation (safe, since only user is affected here)
-    const {canCreateStage, ...secureUpdate} = update;
+    const { canCreateStage, ...secureUpdate } = update;
     const payload = {
       ...secureUpdate,
       _id: id,
@@ -850,7 +883,7 @@ class Distributor extends EventEmitter.EventEmitter {
     this.sendToUser(id, ServerDeviceEvents.UserChanged, payload);
     return this._db
       .collection<User<ObjectId>>(Collections.USERS)
-      .findOneAndUpdate({_id: id}, {$set: secureUpdate})
+      .findOneAndUpdate({ _id: id }, { $set: secureUpdate })
       .then((result) => {
         if (result.value && result.ok) {
           this.emit(ServerDeviceEvents.UserChanged, payload);
@@ -877,7 +910,7 @@ class Distributor extends EventEmitter.EventEmitter {
     this.sendToUser(id, ServerDeviceEvents.UserChanged, payload);
     return this._db
       .collection<User<ObjectId>>(Collections.USERS)
-      .findOneAndUpdate({_id: id}, {$set: update})
+      .findOneAndUpdate({ _id: id }, { $set: update })
       .then((result) => {
         if (result.value && result.ok) {
           this.emit(ServerDeviceEvents.UserChanged, payload);
@@ -895,7 +928,7 @@ class Distributor extends EventEmitter.EventEmitter {
   deleteUser(id: ObjectId): Promise<any> {
     return this._db
       .collection<User<ObjectId>>(Collections.USERS)
-      .deleteOne({_id: id})
+      .deleteOne({ _id: id })
       .then((result) => {
         if (result.deletedCount > 0) {
           return this.emit(ServerDeviceEvents.UserRemoved, id);
@@ -906,13 +939,13 @@ class Distributor extends EventEmitter.EventEmitter {
         Promise.all([
           this._db
             .collection<Stage<ObjectId>>(Collections.STAGES)
-            .find({admins: [id]}, {projection: {_id: 1}})
+            .find({ admins: [id] }, { projection: { _id: 1 } })
             .toArray()
-            .then((stages) => stages.map((s) => this.deleteStage(id, s._id))),
+            .then((stages) => stages.map((s) => this.deleteStage(s._id))),
           // Removes all associated devices and its associated local tracks, remote tracks, sound cards, presets
           this._db
             .collection<Device<ObjectId>>(Collections.DEVICES)
-            .find({userId: id}, {projection: {_id: 1}})
+            .find({ userId: id }, { projection: { _id: 1 } })
             .toArray()
             .then((devices) =>
               devices.map((device) => this.deleteDevice(device._id))
@@ -920,7 +953,7 @@ class Distributor extends EventEmitter.EventEmitter {
           // Removes all associated stage members and remote tracks
           this._db
             .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
-            .find({userId: id}, {projection: {_id: 1}})
+            .find({ userId: id }, { projection: { _id: 1 } })
             .toArray()
             .then((stageMembers) =>
               stageMembers.map((stageMember) =>
@@ -946,7 +979,7 @@ class Distributor extends EventEmitter.EventEmitter {
   readDevicesByUser(userId: ObjectId): Promise<Device<ObjectId>[]> {
     return this._db
       .collection<Device<ObjectId>>(Collections.DEVICES)
-      .find({userId})
+      .find({ userId })
       .toArray();
   }
 
@@ -956,13 +989,13 @@ class Distributor extends EventEmitter.EventEmitter {
   ): Promise<Device<ObjectId> | null> {
     return this._db
       .collection<Device<ObjectId>>(Collections.DEVICES)
-      .findOne({userId, uuid});
+      .findOne({ userId, uuid });
   }
 
   readDevice(id: ObjectId): Promise<Device<ObjectId> | null> {
     return this._db
       .collection<Device<ObjectId>>(Collections.DEVICES)
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   private readDevicesByApiServer(
@@ -970,7 +1003,7 @@ class Distributor extends EventEmitter.EventEmitter {
   ): Promise<Device<ObjectId>[]> {
     return this._db
       .collection<Device<ObjectId>>(Collections.DEVICES)
-      .find({apiServer})
+      .find({ apiServer })
       .toArray();
   }
 
@@ -988,7 +1021,7 @@ class Distributor extends EventEmitter.EventEmitter {
     this.sendToUser(userId, ServerDeviceEvents.DeviceChanged, payload);
     return this._db
       .collection<Device<ObjectId>>(Collections.DEVICES)
-      .updateOne({_id: id}, {$set: update})
+      .updateOne({ _id: id }, { $set: update })
       .then((result) => {
         if (result.modifiedCount > 0) {
           this.emit(ServerDeviceEvents.DeviceChanged, payload);
@@ -1001,11 +1034,15 @@ class Distributor extends EventEmitter.EventEmitter {
   deleteDevice(id: ObjectId): Promise<any> {
     return this._db
       .collection<Device<ObjectId>>(Collections.DEVICES)
-      .findOneAndDelete({_id: id}, {projection: {userId: 1}})
+      .findOneAndDelete({ _id: id }, { projection: { userId: 1 } })
       .then((result) => {
         if (result.value) {
           this.emit(ServerDeviceEvents.DeviceRemoved, id);
-          this.sendToUser(result.value.userId, ServerDeviceEvents.DeviceRemoved, id);
+          this.sendToUser(
+            result.value.userId,
+            ServerDeviceEvents.DeviceRemoved,
+            id
+          );
           // Delete associated local tracks and sound cards
           return Promise.all([
             this._db
@@ -1016,7 +1053,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 {
                   deviceId: id,
                 },
-                {projection: {_id: 1, userId: 1}}
+                { projection: { _id: 1, userId: 1 } }
               )
               .toArray()
               .then((localAudioTracks) =>
@@ -1035,7 +1072,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 {
                   deviceId: id,
                 },
-                {projection: {_id: 1, userId: 1}}
+                { projection: { _id: 1, userId: 1 } }
               )
               .toArray()
               .then((localVideoTracks) =>
@@ -1050,32 +1087,32 @@ class Distributor extends EventEmitter.EventEmitter {
               .collection<CustomGroupVolume<ObjectId>>(
                 Collections.CUSTOM_GROUP_VOLUMES
               )
-              .deleteMany({deviceId: id}),
+              .deleteMany({ deviceId: id }),
             this._db
               .collection<CustomGroupPosition<ObjectId>>(
                 Collections.CUSTOM_GROUP_POSITIONS
               )
-              .deleteMany({deviceId: id}),
+              .deleteMany({ deviceId: id }),
             this._db
               .collection<CustomStageMemberPosition<ObjectId>>(
                 Collections.CUSTOM_STAGE_MEMBER_POSITIONS
               )
-              .deleteMany({deviceId: id}),
+              .deleteMany({ deviceId: id }),
             this._db
               .collection<CustomStageMemberVolume<ObjectId>>(
                 Collections.CUSTOM_STAGE_MEMBER_VOLUMES
               )
-              .deleteMany({deviceId: id}),
+              .deleteMany({ deviceId: id }),
             this._db
               .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
                 Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
               )
-              .deleteMany({deviceId: id}),
+              .deleteMany({ deviceId: id }),
             this._db
               .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
                 Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
               )
-              .deleteMany({deviceId: id}),
+              .deleteMany({ deviceId: id }),
             this.renewOnlineStatus(result.value.userId),
           ]);
         }
@@ -1084,54 +1121,42 @@ class Distributor extends EventEmitter.EventEmitter {
   }
 
   createStage(
-    userId: ObjectId,
     initialStage: Partial<Omit<Stage<ObjectId>, "_id">>
   ): Promise<Stage<ObjectId>> {
-    return this.readUser(userId)
-      .then((user) => {
-        if (user.canCreateStage) {
-          return {
-            admins: [...initialStage.admins, userId],
-            soundEditors: [...initialStage.soundEditors, userId],
-          };
-        }
-        throw new Error("User has no permissions to create a stage");
+    return this._db
+      .collection<Stage<ObjectId>>(Collections.STAGES)
+      .insertOne({
+        name: "",
+        password: null,
+        description: "",
+        admins: [],
+        soundEditors: [],
+        iconUrl: null,
+        videoType: "mediasoup",
+        audioType: "mediasoup",
+        preferredPosition: {
+          // Frankfurt
+          lat: 50.110924,
+          lng: 8.682127,
+        },
+        ...initialStage,
+        videoRouter: null,
+        audioRouter: null,
+        _id: undefined,
       })
-      .then(async ({admins, soundEditors}) => {
-        let extendedStage = initialStage;
-        for (const stageHandler of this._stageHandlers) {
-          extendedStage = await stageHandler.prepareStage(extendedStage);
-        }
-        return this._db
-          .collection<Stage<ObjectId>>(Collections.STAGES)
-          .insertOne({
-            name: "",
-            password: null,
-            description: "",
-            admins,
-            soundEditors,
-            iconUrl: null,
-            videoType: "mediasoup",
-            audioType: "mediasoup",
-            ...extendedStage,
-            videoTypeManaged: false,
-            audioTypeManaged: false,
-            _id: undefined,
-          })
-          .then((result) => {
-            this.emit(
-              ServerDeviceEvents.StageAdded,
-              result.ops[0] as Payloads.CreateStage
-            );
-            result.ops[0].admins.forEach((adminId) =>
-              this.sendToUser(
-                adminId,
-                ServerDeviceEvents.StageAdded,
-                result.ops[0] as Payloads.CreateStage
-              )
-            );
-            return result.ops[0];
-          });
+      .then((result) => {
+        this.emit(
+          ServerDeviceEvents.StageAdded,
+          (result.ops[0] as unknown) as ServerDevicePayloads.StageAdded
+        );
+        result.ops[0].admins.forEach((adminId) =>
+          this.sendToUser(
+            adminId,
+            ServerDeviceEvents.StageAdded,
+            (result.ops[0] as unknown) as ServerDevicePayloads.StageAdded
+          )
+        );
+        return result.ops[0];
       });
   }
 
@@ -1184,7 +1209,7 @@ class Distributor extends EventEmitter.EventEmitter {
     // Also create a custom stage member for the same user and mute it per default for all devices
     await this._db
       .collection<Device<ObjectId>>(Collections.DEVICES)
-      .find({userId}, {projection: {_id: 1}})
+      .find({ userId }, { projection: { _id: 1 } })
       .toArray()
       .then((devices) =>
         devices.map((device) =>
@@ -1235,7 +1260,7 @@ class Distributor extends EventEmitter.EventEmitter {
     if (!previousObjectId || !previousObjectId.equals(stageMember._id)) {
       if (previousObjectId) {
         // Set old stage member offline (async!)
-        await this.updateStageMember(previousObjectId, {online: false});
+        await this.updateStageMember(previousObjectId, { online: false });
         // Set old stage member tracks offline (async!)
         // Remove stage member related audio and video
         await this._db
@@ -1269,13 +1294,12 @@ class Distributor extends EventEmitter.EventEmitter {
       // Create stage related audio and video producers
       await this._db
         .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
-        .find({userId}, {projection: {_id: 1}})
+        .find({ userId }, { projection: { _id: 1 } })
         .toArray()
         .then((localVideoTracks) =>
           localVideoTracks.map((localVideoTrack) =>
             this.createRemoteVideoTrack({
               ...localVideoTrack,
-              _id: undefined,
               stageMemberId: user.stageMemberId,
               localVideoTrackId: localVideoTrack._id,
               userId: user._id,
@@ -1287,7 +1311,7 @@ class Distributor extends EventEmitter.EventEmitter {
 
       await this._db
         .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
-        .find({userId}, {projection: {_id: 1}})
+        .find({ userId }, { projection: { _id: 1 } })
         .toArray()
         .then((localAudioTracks) =>
           localAudioTracks.map((localAudioTrack) =>
@@ -1295,7 +1319,6 @@ class Distributor extends EventEmitter.EventEmitter {
               ...DefaultVolumeProperties,
               ...DefaultThreeDimensionalProperties,
               ...localAudioTrack,
-              _id: undefined,
               stageMemberId: user.stageMemberId,
               localAudioTrackId: localAudioTrack._id,
               userId: user._id,
@@ -1306,7 +1329,7 @@ class Distributor extends EventEmitter.EventEmitter {
         );
     }
 
-    TRACE && trace(`joinStage: ${Date.now() - startTime}ms`);
+    trace(`joinStage: ${Date.now() - startTime}ms`);
   }
 
   async leaveStage(userId: ObjectId): Promise<any> {
@@ -1327,7 +1350,7 @@ class Distributor extends EventEmitter.EventEmitter {
       this.sendToUser(user._id, ServerDeviceEvents.StageLeft);
 
       // Set old stage member offline (async!)
-      await this.updateStageMember(previousObjectId, {online: false});
+      await this.updateStageMember(previousObjectId, { online: false });
 
       // Remove old stage member related video and audio
       await Promise.all([
@@ -1359,7 +1382,7 @@ class Distributor extends EventEmitter.EventEmitter {
           ),
       ]);
     }
-    TRACE && trace(`leaveStage: ${Date.now() - startTime}ms`);
+    trace(`leaveStage: ${Date.now() - startTime}ms`);
   }
 
   leaveStageForGood(userId: ObjectId, stageId: ObjectId): Promise<any> {
@@ -1376,7 +1399,7 @@ class Distributor extends EventEmitter.EventEmitter {
             stageId,
           },
           {
-            projection: {_id: 1},
+            projection: { _id: 1 },
           }
         )
         .then((stageMember) => {
@@ -1390,18 +1413,26 @@ class Distributor extends EventEmitter.EventEmitter {
                       stageId,
                     },
                     {
-                      projection: {_id: 1},
+                      projection: { _id: 1 },
                     }
                   )
                   .toArray()
               )
               .then((groups) =>
                 groups.map((group) =>
-                  this.sendToUser(userId, ServerDeviceEvents.GroupRemoved, group._id)
+                  this.sendToUser(
+                    userId,
+                    ServerDeviceEvents.GroupRemoved,
+                    group._id
+                  )
                 )
               )
               .then(() =>
-                this.sendToUser(userId, ServerDeviceEvents.StageRemoved, stageId)
+                this.sendToUser(
+                  userId,
+                  ServerDeviceEvents.StageRemoved,
+                  stageId
+                )
               );
           }
           throw new Error(`User ${userId} was not inside ${stageId}`);
@@ -1412,32 +1443,24 @@ class Distributor extends EventEmitter.EventEmitter {
   readStage(id: ObjectId): Promise<Stage<ObjectId>> {
     return this._db
       .collection<Stage<ObjectId>>(Collections.STAGES)
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
-  readManagedStage(userId: ObjectId, id: ObjectId): Promise<Stage<ObjectId>> {
+  readAdministratedStage(
+    userId: ObjectId,
+    id: ObjectId
+  ): Promise<Stage<ObjectId>> {
     return this._db.collection<Stage<ObjectId>>(Collections.STAGES).findOne({
       _id: id,
       admins: userId,
     });
   }
 
-  readManagedStageByObjectId(
-    userId: ObjectId,
-    id: ObjectId
-  ): Promise<Stage<ObjectId>> {
-    return this._db
-      .collection<Group<ObjectId>>(Collections.GROUPS)
-      .findOne({
-        _id: id,
-        admins: userId,
-      })
-      .then((group) => {
-        if (group) {
-          return this.readManagedStage(userId, group.stageId);
-        }
-        return null;
-      });
+  readManagedStage(userId: ObjectId, id: ObjectId): Promise<Stage<ObjectId>> {
+    return this._db.collection<Stage<ObjectId>>(Collections.STAGES).findOne({
+      _id: id,
+      $or: [{ admins: userId }, { soundEditors: userId }],
+    });
   }
 
   private async getWholeStage(
@@ -1447,27 +1470,27 @@ class Distributor extends EventEmitter.EventEmitter {
   ): Promise<StagePackage<ObjectId>> {
     const stage = await this._db
       .collection<Stage<ObjectId>>(Collections.STAGES)
-      .findOne({_id: stageId});
+      .findOne({ _id: stageId });
     const groups = await this._db
       .collection<Group<ObjectId>>(Collections.GROUPS)
-      .find({stageId})
+      .find({ stageId })
       .toArray();
     const stageMembers = await this._db
       .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
-      .find({stageId})
+      .find({ stageId })
       .toArray();
     const stageMemberObjectIds = stageMembers.map(
       (stageMember) => stageMember.userId
     );
     const remoteUsers = await this._db
       .collection<User<ObjectId>>(Collections.USERS)
-      .find({_id: {$in: stageMemberObjectIds}})
+      .find({ _id: { $in: stageMemberObjectIds } })
       .toArray();
     const customGroupVolumes = await this._db
       .collection<CustomGroupVolume<ObjectId>>(Collections.CUSTOM_GROUP_VOLUMES)
       .find({
         userId,
-        groupId: {$in: groups.map((group) => group._id)},
+        groupId: { $in: groups.map((group) => group._id) },
       })
       .toArray();
     const customGroupPositions = await this._db
@@ -1476,7 +1499,7 @@ class Distributor extends EventEmitter.EventEmitter {
       )
       .find({
         userId,
-        groupId: {$in: groups.map((group) => group._id)},
+        groupId: { $in: groups.map((group) => group._id) },
       })
       .toArray();
 
@@ -1572,13 +1595,12 @@ class Distributor extends EventEmitter.EventEmitter {
   }
 
   updateStage(
-    userId: ObjectId,
     id: ObjectId,
     update: Partial<Omit<Stage<ObjectId>, "_id">>
   ): Promise<void> {
     return this._db
       .collection<Stage<ObjectId>>(Collections.STAGES)
-      .updateOne({_id: id, admins: userId}, {$set: update})
+      .updateOne({ _id: id }, { $set: update })
       .then((response) => {
         if (response.modifiedCount > 0) {
           const payload = {
@@ -1586,59 +1608,77 @@ class Distributor extends EventEmitter.EventEmitter {
             _id: id,
           };
           this.emit(ServerDeviceEvents.StageChanged, payload);
+          if (
+            (update.audioRouter !== undefined && update.audioRouter === null) ||
+            (update.videoRouter !== undefined && update.videoRouter == null)
+          ) {
+            // Async
+            this.readStage(id)
+              .then((stage) => this.serveStage(stage))
+              .catch((e) => error(e));
+          }
           return this.sendToStage(id, ServerDeviceEvents.StageChanged, payload);
         }
-        throw new Error(
-          `Could not find and update stage or user ${userId} has not permissions.`
-        );
+        throw new Error(`Could not find and update stage ${id}.`);
       });
   }
 
   readUnmanagedStages(): Promise<Stage<ObjectId>[]> {
     return this._db
       .collection<Stage<ObjectId>>(Collections.STAGES)
-      .find({$or: [{videoTypeManaged: false}, {audioTypeManaged: false}]})
+      .find({ $or: [{ videoRouter: null }, { audioRouter: null }] })
       .toArray();
   }
 
-  updateStageAsRouter(
-    id: ObjectId,
-    update: Partial<Omit<Stage<ObjectId>, "_id">>
-  ): Promise<void> {
+  deleteStage(id: ObjectId): Promise<any> {
     return this._db
       .collection<Stage<ObjectId>>(Collections.STAGES)
-      .updateOne({_id: id}, {$set: update})
-      .then((response) => {
-        if (response.modifiedCount > 0) {
-          const payload = {
-            ...update,
-            _id: id,
-          };
-          this.emit(ServerDeviceEvents.StageChanged, payload);
-          return this.sendToStage(id, ServerDeviceEvents.StageChanged, payload);
-        }
-        throw new Error(
-          `Could not find and update stage.`
-        );
-      });
-  }
-
-  deleteStage(userId: ObjectId, id: ObjectId): Promise<any> {
-    return this._db
-      .collection<Stage<ObjectId>>(Collections.STAGES)
-      .findOneAndDelete({_id: id, admins: userId})
+      .findOneAndDelete({ _id: id })
       .then((result) => {
         if (result.ok && result.value) {
-          this._stageHandlers.forEach((stageHandler) =>
-            stageHandler.cleanUpStage(result.value)
-          );
           this.emit(ServerDeviceEvents.StageRemoved, id);
+          if (
+            result.value.videoRouter !== null ||
+            result.value.audioRouter !== null
+          ) {
+            if (result.value.videoRouter === result.value.audioRouter) {
+              this.sendToRouter(
+                result.value.audioRouter,
+                ServerRouterEvents.UnServeStage,
+                {
+                  type: result.value.audioType,
+                  stageId: id as any,
+                } as ServerRouterPayloads.UnServeStage
+              );
+            } else {
+              if (result.value.videoRouter) {
+                this.sendToRouter(
+                  result.value.audioRouter,
+                  ServerRouterEvents.UnServeStage,
+                  {
+                    type: result.value.videoType,
+                    stageId: id as any,
+                  } as ServerRouterPayloads.UnServeStage
+                );
+              }
+              if (result.value.audioRouter) {
+                this.sendToRouter(
+                  result.value.audioRouter,
+                  ServerRouterEvents.UnServeStage,
+                  {
+                    type: result.value.audioType,
+                    stageId: id as any,
+                  } as ServerRouterPayloads.UnServeStage
+                );
+              }
+            }
+          }
           return Promise.all([
             this.sendToStage(id, ServerDeviceEvents.StageRemoved, id),
             // Delete groups
             this._db
               .collection<Group<ObjectId>>(Collections.GROUPS)
-              .find({stageId: id}, {projection: {_id: 1}})
+              .find({ stageId: id }, { projection: { _id: 1 } })
               .toArray()
               .then((groups) =>
                 Promise.all(groups.map((group) => this.deleteGroup(group._id)))
@@ -1652,7 +1692,7 @@ class Distributor extends EventEmitter.EventEmitter {
   async createGroup(
     initial: Omit<Group<ObjectId>, "_id" | "color"> & Partial<{ color: string }>
   ): Promise<Group<ObjectId>> {
-    let {color} = initial;
+    let { color } = initial;
     if (!color) {
       color = await this.generateGroupColor(initial.stageId);
     }
@@ -1688,7 +1728,7 @@ class Distributor extends EventEmitter.EventEmitter {
         {
           $set: update,
         },
-        {upsert: false, projection: {_id: 1}}
+        { upsert: false, projection: { _id: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -1722,7 +1762,11 @@ class Distributor extends EventEmitter.EventEmitter {
             })
             .then((insertResult) => insertResult.ops[0] as SoundCard<ObjectId>)
             .then((soundCard) => {
-              this.sendToUser(userId, ServerDeviceEvents.SoundCardAdded, soundCard);
+              this.sendToUser(
+                userId,
+                ServerDeviceEvents.SoundCardAdded,
+                soundCard
+              );
               return soundCard;
             });
         }
@@ -1733,13 +1777,9 @@ class Distributor extends EventEmitter.EventEmitter {
   async createStageMember(
     initial: Omit<StageMember<ObjectId>, "_id">
   ): Promise<StageMember<ObjectId>> {
-    let extended = initial;
-    for (const stageHandler of this._stageHandlers) {
-      extended = await stageHandler.prepareStageMember(initial);
-    }
     return this._db
       .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
-      .insertOne(extended)
+      .insertOne(initial)
       .then((result) => result.ops[0] as StageMember<ObjectId>)
       .then((stageMember) => {
         this.emit(ServerDeviceEvents.StageMemberAdded, stageMember);
@@ -1772,7 +1812,7 @@ class Distributor extends EventEmitter.EventEmitter {
     return this._db
       .collection<Group<ObjectId>>(Collections.GROUPS)
       .findOneAndDelete(
-        {_id: id},
+        { _id: id },
         {
           projection: {
             _id: 1,
@@ -1788,7 +1828,7 @@ class Distributor extends EventEmitter.EventEmitter {
             this._db
               .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
               .find(
-                {groupId: result.value._id},
+                { groupId: result.value._id },
                 {
                   projection: {
                     _id: 1,
@@ -1811,7 +1851,7 @@ class Distributor extends EventEmitter.EventEmitter {
               .collection<CustomGroupVolume<ObjectId>>(
                 Collections.CUSTOM_GROUP_VOLUMES
               )
-              .find({groupId: result.value._id}, {projection: {_id: 1}})
+              .find({ groupId: result.value._id }, { projection: { _id: 1 } })
               .toArray()
               .then((customGroupVolumes) =>
                 customGroupVolumes.map((customGroupVolume) =>
@@ -1822,7 +1862,7 @@ class Distributor extends EventEmitter.EventEmitter {
               .collection<CustomGroupPosition<ObjectId>>(
                 Collections.CUSTOM_GROUP_POSITIONS
               )
-              .find({groupId: result.value._id}, {projection: {_id: 1}})
+              .find({ groupId: result.value._id }, { projection: { _id: 1 } })
               .toArray()
               .then((customGroupPositions) =>
                 customGroupPositions.map((customGroupPosition) =>
@@ -1848,7 +1888,7 @@ class Distributor extends EventEmitter.EventEmitter {
           _id: id,
           userId,
         },
-        {projection: {userId: 1, name: 1}}
+        { projection: { userId: 1, name: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -1862,7 +1902,7 @@ class Distributor extends EventEmitter.EventEmitter {
             this._db
               .collection<Device<ObjectId>>(Collections.DEVICES)
               .find(
-                {$or: [{availableObjectIds: id}, {soundCardId: id}]},
+                { $or: [{ availableObjectIds: id }, { soundCardId: id }] },
                 {
                   projection: {
                     availableObjectIds: 1,
@@ -1893,20 +1933,17 @@ class Distributor extends EventEmitter.EventEmitter {
   deleteStageMember(id: ObjectId): Promise<any> {
     return this._db
       .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
-      .findOneAndDelete({_id: id})
+      .findOneAndDelete({ _id: id })
       .then((result) => {
         if (result.value) {
           // Delete all custom stage members and stage member tracks
-          this._stageHandlers.forEach((stageHandler) =>
-            stageHandler.cleanUpStageMember(result.value)
-          );
           this.emit(ServerDeviceEvents.StageMemberRemoved, id);
           return Promise.all([
             this._db
               .collection<CustomStageMemberVolume<ObjectId>>(
                 Collections.CUSTOM_STAGE_MEMBER_VOLUMES
               )
-              .find({stageMemberId: id}, {projection: {_id: 1}})
+              .find({ stageMemberId: id }, { projection: { _id: 1 } })
               .toArray()
               .then((items) =>
                 Promise.all(
@@ -1919,7 +1956,7 @@ class Distributor extends EventEmitter.EventEmitter {
               .collection<CustomStageMemberPosition<ObjectId>>(
                 Collections.CUSTOM_STAGE_MEMBER_POSITIONS
               )
-              .find({stageMemberId: id}, {projection: {_id: 1}})
+              .find({ stageMemberId: id }, { projection: { _id: 1 } })
               .toArray()
               .then((items) =>
                 Promise.all(
@@ -1932,7 +1969,7 @@ class Distributor extends EventEmitter.EventEmitter {
               .collection<RemoteVideoTrack<ObjectId>>(
                 Collections.REMOTE_VIDEO_TRACKS
               )
-              .find({stageMemberId: id}, {projection: {_id: 1}})
+              .find({ stageMemberId: id }, { projection: { _id: 1 } })
               .toArray()
               .then((producers) =>
                 producers.map((producer) =>
@@ -1943,7 +1980,7 @@ class Distributor extends EventEmitter.EventEmitter {
               .collection<RemoteAudioTrack<ObjectId>>(
                 Collections.REMOTE_AUDIO_TRACKS
               )
-              .find({stageMemberId: id}, {projection: {_id: 1}})
+              .find({ stageMemberId: id }, { projection: { _id: 1 } })
               .toArray()
               .then((remoteAudioTracks) =>
                 remoteAudioTracks.map((remoteAudioTrack) =>
@@ -2003,31 +2040,31 @@ class Distributor extends EventEmitter.EventEmitter {
   readGroup(id: ObjectId): Promise<Group<ObjectId>> {
     return this._db
       .collection<Group<ObjectId>>(Collections.GROUPS)
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   readSoundCard(id: ObjectId): Promise<SoundCard<ObjectId>> {
     return this._db
       .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   readStageMember(id: ObjectId): Promise<StageMember<ObjectId>> {
     return this._db
       .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   updateGroup(
     id: ObjectId,
-    update: Partial<Omit<Group<ObjectId>, "_id">>
+    update: Partial<Omit<Group<ObjectId>, "_id" | "stageId">>
   ): Promise<void> {
     return this._db
       .collection<Group<ObjectId>>(Collections.GROUPS)
       .findOneAndUpdate(
-        {_id: id},
-        {$set: update},
-        {projection: {stageId: 1}}
+        { _id: id },
+        { $set: update },
+        { projection: { stageId: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -2048,14 +2085,14 @@ class Distributor extends EventEmitter.EventEmitter {
 
   updateStageMember(
     id: ObjectId,
-    update: Partial<Omit<StageMember<ObjectId>, "_id">>
+    update: Partial<Omit<StageMember<ObjectId>, "_id" | "stageId" | "userId">>
   ): Promise<void> {
     return this._db
       .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
       .findOneAndUpdate(
-        {_id: id},
-        {$set: update},
-        {projection: {stageId: 1}}
+        { _id: id },
+        { $set: update },
+        { projection: { stageId: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -2120,11 +2157,11 @@ class Distributor extends EventEmitter.EventEmitter {
         Collections.CUSTOM_GROUP_POSITIONS
       )
       .findOneAndUpdate(
-        {userId, groupId, deviceId},
+        { userId, groupId, deviceId },
         {
           $set: update,
         },
-        {upsert: true, projection: {_id: 1}}
+        { upsert: true, projection: { _id: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -2162,10 +2199,13 @@ class Distributor extends EventEmitter.EventEmitter {
                   Collections.CUSTOM_GROUP_POSITIONS
                 )
                 .insertOne(initial)
-                .then((result) => {
-                  if (result.result.ok) {
-                    const payload = result.ops[0];
-                    this.emit(ServerDeviceEvents.CustomGroupPositionAdded, payload);
+                .then((result2) => {
+                  if (result2.result.ok) {
+                    const payload = result2.ops[0];
+                    this.emit(
+                      ServerDeviceEvents.CustomGroupPositionAdded,
+                      payload
+                    );
                     return this.sendToUser(
                       userId,
                       ServerDeviceEvents.CustomGroupPositionAdded,
@@ -2191,7 +2231,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .collection<CustomGroupPosition<ObjectId>>(
         Collections.CUSTOM_GROUP_POSITIONS
       )
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   deleteCustomGroupPosition(id: ObjectId): Promise<void> {
@@ -2199,7 +2239,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .collection<CustomGroupPosition<ObjectId>>(
         Collections.CUSTOM_GROUP_POSITIONS
       )
-      .findOneAndDelete({_id: id}, {projection: {userId: 1}})
+      .findOneAndDelete({ _id: id }, { projection: { userId: 1 } })
       .then((result) => {
         if (result.value) {
           this.emit(ServerDeviceEvents.CustomGroupPositionRemoved, id);
@@ -2224,11 +2264,11 @@ class Distributor extends EventEmitter.EventEmitter {
     return this._db
       .collection<CustomGroupVolume<ObjectId>>(Collections.CUSTOM_GROUP_VOLUMES)
       .findOneAndUpdate(
-        {userId, groupId, deviceId},
+        { userId, groupId, deviceId },
         {
           $set: update,
         },
-        {upsert: true, projection: {_id: 1}}
+        { upsert: true, projection: { _id: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -2262,10 +2302,13 @@ class Distributor extends EventEmitter.EventEmitter {
                   Collections.CUSTOM_GROUP_VOLUMES
                 )
                 .insertOne(initial)
-                .then((result) => {
-                  if (result.result.ok) {
-                    const payload = result.ops[0];
-                    this.emit(ServerDeviceEvents.CustomGroupVolumeAdded, payload);
+                .then((result2) => {
+                  if (result2.result.ok) {
+                    const payload = result2.ops[0];
+                    this.emit(
+                      ServerDeviceEvents.CustomGroupVolumeAdded,
+                      payload
+                    );
                     return this.sendToUser(
                       userId,
                       ServerDeviceEvents.CustomGroupVolumeAdded,
@@ -2287,14 +2330,14 @@ class Distributor extends EventEmitter.EventEmitter {
   readCustomGroupVolume(id: ObjectId): Promise<CustomGroupVolume<ObjectId>> {
     return this._db
       .collection<CustomGroupVolume<ObjectId>>(Collections.CUSTOM_GROUP_VOLUMES)
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   deleteCustomGroupVolume(id: ObjectId): Promise<void> {
     // TODO: This might be insecure, maybe check user and device id also?
     return this._db
       .collection<CustomGroupVolume<ObjectId>>(Collections.CUSTOM_GROUP_VOLUMES)
-      .findOneAndDelete({_id: id}, {projection: {userId: 1}})
+      .findOneAndDelete({ _id: id }, { projection: { userId: 1 } })
       .then((result) => {
         if (result.value) {
           this.emit(ServerDeviceEvents.CustomGroupVolumeRemoved, id);
@@ -2319,11 +2362,11 @@ class Distributor extends EventEmitter.EventEmitter {
         Collections.CUSTOM_STAGE_MEMBER_POSITIONS
       )
       .findOneAndUpdate(
-        {userId, stageMemberId, deviceId},
+        { userId, stageMemberId, deviceId },
         {
           $set: update,
         },
-        {upsert: true, projection: {_id: 1}}
+        { upsert: true, projection: { _id: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -2332,7 +2375,10 @@ class Distributor extends EventEmitter.EventEmitter {
             ...update,
             _id: result.value._id,
           };
-          this.emit(ServerDeviceEvents.CustomStageMemberPositionChanged, payload);
+          this.emit(
+            ServerDeviceEvents.CustomStageMemberPositionChanged,
+            payload
+          );
           return this.sendToUser(
             userId,
             ServerDeviceEvents.CustomStageMemberPositionChanged,
@@ -2365,15 +2411,15 @@ class Distributor extends EventEmitter.EventEmitter {
                 .insertOne(payload)
                 .then((response) => {
                   if (response.result.ok) {
-                    const payload = response.ops[0];
+                    const payload2 = response.ops[0];
                     this.emit(
                       ServerDeviceEvents.CustomStageMemberPositionAdded,
-                      payload
+                      payload2
                     );
                     return this.sendToUser(
                       userId,
                       ServerDeviceEvents.CustomStageMemberPositionAdded,
-                      payload
+                      payload2
                     );
                   }
                   throw new Error(
@@ -2395,7 +2441,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .collection<CustomStageMemberPosition<ObjectId>>(
         Collections.CUSTOM_STAGE_MEMBER_POSITIONS
       )
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   deleteCustomStageMemberPosition(id: ObjectId): Promise<void> {
@@ -2403,7 +2449,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .collection<CustomStageMemberPosition<ObjectId>>(
         Collections.CUSTOM_STAGE_MEMBER_POSITIONS
       )
-      .findOneAndDelete({_id: id}, {projection: {userId: 1}})
+      .findOneAndDelete({ _id: id }, { projection: { userId: 1 } })
       .then((result) => {
         if (result.value) {
           this.emit(ServerDeviceEvents.CustomStageMemberPositionRemoved, id);
@@ -2430,11 +2476,11 @@ class Distributor extends EventEmitter.EventEmitter {
         Collections.CUSTOM_STAGE_MEMBER_VOLUMES
       )
       .findOneAndUpdate(
-        {userId, stageMemberId},
+        { userId, stageMemberId },
         {
           $set: update,
         },
-        {upsert: true, projection: {_id: 1}}
+        { upsert: true, projection: { _id: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -2502,7 +2548,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .collection<CustomStageMemberVolume<ObjectId>>(
         Collections.CUSTOM_STAGE_MEMBER_VOLUMES
       )
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   deleteCustomStageMemberVolume(id: ObjectId): Promise<void> {
@@ -2510,7 +2556,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .collection<CustomStageMemberVolume<ObjectId>>(
         Collections.CUSTOM_STAGE_MEMBER_VOLUMES
       )
-      .findOneAndDelete({_id: id}, {projection: {userId: 1}})
+      .findOneAndDelete({ _id: id }, { projection: { userId: 1 } })
       .then((result) => {
         if (result.value) {
           this.emit(ServerDeviceEvents.CustomStageMemberVolumeRemoved, id);
@@ -2537,11 +2583,11 @@ class Distributor extends EventEmitter.EventEmitter {
         Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
       )
       .findOneAndUpdate(
-        {userId, remoteAudioTrackId, deviceId},
+        { userId, remoteAudioTrackId, deviceId },
         {
           $set: update,
         },
-        {upsert: true, projection: {_id: 1}}
+        { upsert: true, projection: { _id: 1 } }
       )
       .then((result) => {
         if (result.value) {
@@ -2616,7 +2662,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
         Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
       )
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   deleteCustomRemoteAudioTrackPosition(id: ObjectId): Promise<void> {
@@ -2624,7 +2670,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
         Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
       )
-      .findOneAndDelete({_id: id}, {projection: {userId: 1}})
+      .findOneAndDelete({ _id: id }, { projection: { userId: 1 } })
       .then((result) => {
         if (result.value) {
           this.emit(ServerDeviceEvents.CustomStageMemberPositionRemoved, id);
@@ -2651,20 +2697,23 @@ class Distributor extends EventEmitter.EventEmitter {
         Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
       )
       .findOneAndUpdate(
-        {userId, remoteAudioTrackId, deviceId},
+        { userId, remoteAudioTrackId, deviceId },
         {
           $set: update,
         },
-        {upsert: true, projection: {_id: 1}}
+        { upsert: true, projection: { _id: 1 } }
       )
       .then((result) => {
         if (result.value) {
           // Return updated document
           const payload = {
             ...update,
-            _id: result.value._id.toHexString(),
-          } as Payloads.CustomRemoteAudioTrackVolumeChanged;
-          this.emit(ServerDeviceEvents.CustomRemoteAudioTrackVolumeChanged, payload);
+            _id: result.value._id as any,
+          } as ServerDevicePayloads.CustomRemoteAudioTrackVolumeChanged;
+          this.emit(
+            ServerDeviceEvents.CustomRemoteAudioTrackVolumeChanged,
+            payload
+          );
           return this.sendToUser(
             userId,
             ServerDeviceEvents.CustomRemoteAudioTrackVolumeChanged,
@@ -2723,7 +2772,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
         Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
       )
-      .findOne({_id: id});
+      .findOne({ _id: id });
   }
 
   deleteCustomRemoteAudioTrackVolume(id: ObjectId): Promise<void> {
@@ -2731,7 +2780,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
         Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
       )
-      .findOneAndDelete({_id: id}, {projection: {userId: 1}})
+      .findOneAndDelete({ _id: id }, { projection: { userId: 1 } })
       .then((result) => {
         if (result.value) {
           this.emit(ServerDeviceEvents.CustomRemoteAudioTrackVolumeRemoved, id);
@@ -2757,13 +2806,13 @@ class Distributor extends EventEmitter.EventEmitter {
       await this._db
         .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
         .updateOne(
-          {stageMemberId: user.stageMemberId},
-          {$set: {online: true}}
+          { stageMemberId: user.stageMemberId },
+          { $set: { online: true } }
         );
     }
     const stageMembers = await this._db
       .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
-      .find({userId: user._id})
+      .find({ userId: user._id })
       .toArray();
     // Get all managed stages and stages, where the user was or is in
     const stages = await this._db
@@ -2775,7 +2824,7 @@ class Distributor extends EventEmitter.EventEmitter {
               $in: stageMembers.map((groupMember) => groupMember.stageId),
             },
           },
-          {admins: user._id},
+          { admins: user._id },
         ],
       })
       .toArray();
@@ -2784,7 +2833,7 @@ class Distributor extends EventEmitter.EventEmitter {
     );
     const groups = await this._db
       .collection<Group<ObjectId>>(Collections.GROUPS)
-      .find({stageId: {$in: stages.map((foundStage) => foundStage._id)}})
+      .find({ stageId: { $in: stages.map((foundStage) => foundStage._id) } })
       .toArray();
     await Promise.all(
       groups.map((group) =>
@@ -2825,7 +2874,7 @@ class Distributor extends EventEmitter.EventEmitter {
     // Send all sound cards
     await this._db
       .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
-      .find({userId: user._id})
+      .find({ userId: user._id })
       .toArray()
       .then((foundSoundCard) =>
         foundSoundCard.map((soundCard) =>
@@ -2852,6 +2901,49 @@ class Distributor extends EventEmitter.EventEmitter {
       ); */
   }
 
+  async serveStage(stage: Stage<ObjectId>): Promise<void> {
+    if (stage.videoRouter === null || stage.audioRouter === null) {
+      if (stage.videoType === stage.audioType) {
+        return this.readRouterByTypeNearLocation(
+          stage.videoType,
+          stage.preferredPosition
+        ).then((router) =>
+          this.sendToRouter(router._id, ServerRouterEvents.ServeStage, {
+            kind: "both",
+            type: stage.videoType,
+            stage: stage as any,
+          } as ServerRouterPayloads.ServeStage)
+        );
+      }
+      if (stage.videoRouter === null) {
+        await this.readRouterByTypeNearLocation(
+          stage.videoType,
+          stage.preferredPosition
+        ).then((router) =>
+          this.sendToRouter(router._id, ServerRouterEvents.ServeStage, {
+            kind: "video",
+            type: stage.videoType,
+            stage: stage as any,
+          } as ServerRouterPayloads.ServeStage)
+        );
+      }
+      if (stage.audioRouter === null) {
+        await this.readRouterByTypeNearLocation(
+          stage.audioType,
+          stage.preferredPosition
+        ).then((router) =>
+          this.sendToRouter(router._id, ServerRouterEvents.ServeStage, {
+            kind: "audio",
+            type: stage.audioType,
+            stage: stage as any,
+          } as ServerRouterPayloads.ServeStage)
+        );
+      }
+      return Promise.resolve();
+    }
+    throw new Error("Stage is already fully served");
+  }
+
   async sendToStage(
     stageId: ObjectId,
     event: string,
@@ -2859,11 +2951,11 @@ class Distributor extends EventEmitter.EventEmitter {
   ): Promise<void> {
     const adminIds: ObjectId[] = await this._db
       .collection<Stage<ObjectId>>(Collections.STAGES)
-      .findOne({_id: stageId}, {projection: {admins: 1}})
+      .findOne({ _id: stageId }, { projection: { admins: 1 } })
       .then((stage) => stage.admins);
     const stageMemberIds: ObjectId[] = await this._db
       .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
-      .find({stageId}, {projection: {userId: 1}})
+      .find({ stageId }, { projection: { userId: 1 } })
       .toArray()
       .then((stageMembers) =>
         stageMembers.map((stageMember) => stageMember.userId)
@@ -2889,7 +2981,7 @@ class Distributor extends EventEmitter.EventEmitter {
   ): Promise<void> {
     return this._db
       .collection<Stage<ObjectId>>(Collections.STAGES)
-      .findOne({_id: stageId}, {projection: {admins: 1}})
+      .findOne({ _id: stageId }, { projection: { admins: 1 } })
       .then((foundStage) =>
         foundStage.admins.forEach((admin) =>
           this.sendToUser(admin, event, payload)
@@ -2904,7 +2996,7 @@ class Distributor extends EventEmitter.EventEmitter {
   ): Promise<void> {
     return this._db
       .collection<User<ObjectId>>(Collections.USERS)
-      .find({stageId}, {projection: {_id: 1}})
+      .find({ stageId }, { projection: { _id: 1 } })
       .toArray()
       .then((users: { _id: ObjectId }[]) =>
         users.forEach((user) => this.sendToUser(user._id, event, payload))
@@ -2918,12 +3010,11 @@ class Distributor extends EventEmitter.EventEmitter {
   ): void {
     if (DEBUG_EVENTS) {
       if (DEBUG_PAYLOAD) {
-        TRACE &&
         trace(
           `SEND TO DEVICE '${socket.id}' ${event}: ${JSON.stringify(payload)}`
         );
       } else {
-        TRACE && trace(`SEND TO DEVICE '${socket.id}' ${event}`);
+        trace(`SEND TO DEVICE '${socket.id}' ${event}`);
       }
     }
     socket.emit(event, payload);
@@ -2932,12 +3023,9 @@ class Distributor extends EventEmitter.EventEmitter {
   sendToUser(userId: ObjectId, event: string, payload?: any): void {
     if (DEBUG_EVENTS) {
       if (DEBUG_PAYLOAD) {
-        TRACE &&
-        trace(
-          `SEND TO USER '${userId}' ${event}: ${JSON.stringify(payload)}`
-        );
+        trace(`SEND TO USER '${userId}' ${event}: ${JSON.stringify(payload)}`);
       } else {
-        TRACE && trace(`SEND TO USER '${userId}' ${event}`);
+        trace(`SEND TO USER '${userId}' ${event}`);
       }
     }
     this._io.to(userId.toString(), event, payload);
@@ -2946,12 +3034,11 @@ class Distributor extends EventEmitter.EventEmitter {
   sendToRouter(routerId: ObjectId, event: string, payload?: any): void {
     if (DEBUG_EVENTS) {
       if (DEBUG_PAYLOAD) {
-        TRACE &&
         trace(
           `SEND TO ROUTER '${routerId}' ${event}: ${JSON.stringify(payload)}`
         );
       } else {
-        TRACE && trace(`SEND TO ROUTER '${routerId}' ${event}`);
+        trace(`SEND TO ROUTER '${routerId}' ${event}`);
       }
     }
     this._io.to(routerId.toString(), event, payload);
@@ -2960,9 +3047,9 @@ class Distributor extends EventEmitter.EventEmitter {
   sendToAll(event: string, payload?: any): void {
     if (DEBUG_EVENTS) {
       if (DEBUG_PAYLOAD) {
-        TRACE && trace(`SEND TO ALL ${event}: ${JSON.stringify(payload)}`);
+        trace(`SEND TO ALL ${event}: ${JSON.stringify(payload)}`);
       } else {
-        TRACE && trace(`SEND TO ALL ${event}`);
+        trace(`SEND TO ALL ${event}`);
       }
     }
     this._io.toAll(event, payload);
@@ -2971,7 +3058,7 @@ class Distributor extends EventEmitter.EventEmitter {
   private generateGroupColor = (stageId: ObjectId) => {
     return this._db
       .collection<Group<ObjectId>>(Collections.GROUPS)
-      .find({stageId})
+      .find({ stageId })
       .toArray()
       .then((groups) => {
         let color: string;
@@ -2984,7 +3071,7 @@ class Distributor extends EventEmitter.EventEmitter {
       });
   };
 
-  public eventNames(): Array<string | symbol> {
+  public static eventNames(): Array<string | symbol> {
     return Object.values(ServerDeviceEvents);
   }
 }

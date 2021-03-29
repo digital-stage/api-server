@@ -1,60 +1,19 @@
-import {ITeckosSocket} from "teckos";
-import {ObjectId} from "mongodb";
+import { ITeckosSocket } from "teckos";
+import { ObjectId } from "mongodb";
 import Router from "../types/model/Router";
-import ServerDeviceEvents from "../types/ServerDeviceEvents";
 import Distributor from "../distributor/Distributor";
 import ClientRouterEvents from "../types/ClientRouterEvents";
-import Payloads from "../types/Payloads";
-import getDistance from "../utils/getDistance";
+import useLogger from "../useLogger";
 import ServerRouterEvents from "../types/ServerRouterEvents";
+import ClientRouterPayloads from "../types/ClientRouterPayloads";
 
-const getAvailableRouter = (
-  distributor: Distributor,
-  type: string,
-  preferredPosition?: { lat: number; lng: number }
-): Promise<Router<ObjectId>> =>
-  distributor.readRoutersAvailableForType(type)
-    .then((routers) => {
-      if (routers.length > 1) {
-        let router = routers[0];
-        if (preferredPosition) {
-          let nearest = getDistance(preferredPosition, router.position);
-          for (const r of routers) {
-            const n = getDistance(preferredPosition, r.positon);
-            if (n < nearest) {
-              nearest = n;
-              router = r;
-            }
-          }
-        }
-        return router;
-      }
-      if (routers.length === 1) {
-        return routers[0];
-      }
-      throw new Error("No router available");
-    });
+const { error, trace } = useLogger("socket:router");
 
-const runManagementJob = (distributor: Distributor) => {
-  distributor.readUnmanagedStages()
-    .then(stages => stages.map(stage => {
-      if( stage.videoTypeManaged ) {
-
-      }
-      if( stage.audioTypeManaged ) {
-        getAvailableRouter(stage.audioType)
-          .then(router => distributor.sendToRouter(router._id, ServerRouterEvents.ManageStage, {
-
-          } as Payloads.ManageStage))
-      }
-    }))
-}
-
-const handleSocketRouterConnection = (
+const handleSocketRouterConnection = async (
   distributor: Distributor,
   socket: ITeckosSocket,
-  initialRouter: Router<ObjectId> & { _id: undefined }
-) => {
+  initialRouter: Omit<Router<ObjectId>, "_id">
+): Promise<Router<ObjectId>> => {
   /*
   When router is connecting:
   - Register router in database with types
@@ -64,39 +23,73 @@ const handleSocketRouterConnection = (
   - For each type: get router that supports type AND matches location as close as possible, then let
     the resulting router manage stage
    */
-
-
-  socket.on(ClientRouterEvents.StageManaged, (payload: Payloads.StageManaged) =>
-    distributor.updateStageAsRouter(new ObjectId(payload._id), payload));
-
-  socket.on(ClientRouterEvents.ChangeStage, (payload: Payloads.ChangeStage) =>
-    distributor.updateStageAsRouter(new ObjectId(payload._id), payload));
-
-  socket.on(ClientRouterEvents.StageUnManaged, (payload: Payloads.StageUnManaged) => {
-    //TODO: Remove router from database, but also trigger a remanagement by other routers
-  };
-
-  socket.on(ClientRouterEvents.ChangeRouter, (payload: Payloads.ChangeRouter) => {
-    //TODO: Mostly the counter of capabilities for a type changed
-    // Expect supported types not changing during a websocket session, so no implementation necessary here
-  });
-
-  // Find all stages without server and assign them to this router
-  const unassignedStages = await this._database.readStagesWithoutRouter(
-    initialRouter.availableOVSlots
+  const router: Router<ObjectId> = await distributor.createRouter(
+    initialRouter
   );
 
-  distributor.on(ServerDeviceEvents.StageAdded, stage => {
-
-  });
-  distributor.on(ServerDeviceEvents.StageChanged, update => {
-
-  });
-  distributor.on(ServerDeviceEvents.StageRemoved, id => {
-
+  socket.on("disconnect", () => {
+    trace(`${router._id} disconnected`);
+    return distributor.deleteRouter(router._id).catch((e) => error(e));
   });
 
-  return distributor.createRouter(initialRouter)
-    .then(router => socket.emit(ServerDeviceEvents.Ready, router));
+  socket.on(
+    ClientRouterEvents.StageServed,
+    (payload: ClientRouterPayloads.StageServed) => {
+      trace(`${router._id}: ${ClientRouterEvents.StageServed}(${payload})`);
+      return distributor.updateStage(new ObjectId(payload._id), payload);
+    }
+  );
+
+  socket.on(
+    ClientRouterEvents.StageUnServed,
+    (payload: ClientRouterPayloads.StageUnServed) => {
+      trace(`${router._id}: ${ClientRouterEvents.StageUnServed}(${payload})`);
+      const stageId = new ObjectId(payload.stageId);
+      if (payload.kind === "audio") {
+        return distributor
+          .updateStage(stageId, {
+            audioRouter: null,
+          })
+          .catch((e) => error(e));
+      }
+      if (payload.kind === "video") {
+        return distributor
+          .updateStage(stageId, {
+            videoRouter: null,
+          })
+          .catch((e) => error(e));
+      }
+      if (payload.kind === "both") {
+        return distributor
+          .updateStage(stageId, {
+            videoRouter: null,
+            audioRouter: null,
+          })
+          .catch((e) => error(e));
+      }
+      throw new Error("Unknown kind of media type unserved");
+    }
+  );
+
+  socket.on(
+    ClientRouterEvents.ChangeRouter,
+    (payload: ClientRouterPayloads.ChangeRouter) => {
+      trace(`${router._id}: ${ClientRouterEvents.ChangeRouter}(${payload})`);
+      // TODO: Mostly the counter of capabilities for a type changed
+      // Expect supported types not changing during a websocket session, so no implementation necessary here
+      const routerId = new ObjectId(payload._id);
+      return distributor.updateRouter(routerId, {
+        ...payload,
+        _id: undefined,
+      });
+    }
+  );
+
+  socket.emit(ServerRouterEvents.Ready, router);
+  trace(
+    `Registered socket handler for router ${router._id} at socket ${socket.id}`
+  );
+  return router;
 };
+
 export default handleSocketRouterConnection;

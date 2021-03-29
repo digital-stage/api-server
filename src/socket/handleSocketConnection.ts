@@ -1,8 +1,9 @@
 import ITeckosSocket from "teckos/lib/types/ITeckosSocket";
+import { ObjectId } from "mongodb";
 import { API_KEY } from "../env";
 import useLogger from "../useLogger";
 import ClientDeviceEvents from "../types/ClientDeviceEvents";
-import Payloads from "../types/Payloads";
+import Payloads from "../types/ServerPayloads";
 import handleSocketClientConnection from "./handleSocketClientConnection";
 import Distributor from "../distributor/Distributor";
 import useAuth from "../auth/useAuth";
@@ -23,7 +24,10 @@ const handleSocketConnection = (
       if (apiKey) {
         // A router is trying to connect
         if (apiKey === API_KEY) {
-          return handleSocketRouterConnection(distributor, socket, router);
+          return handleSocketRouterConnection(distributor, socket, {
+            ...router,
+            _id: undefined,
+          });
         }
         error(`Router ${router.url} tried to sign in with wrong api key`);
       } else {
@@ -41,7 +45,16 @@ const handleSocketConnection = (
       if (token) {
         return getUserByToken(token)
           .then((user) =>
-            handleSocketClientConnection(distributor, socket, user, device)
+            handleSocketClientConnection(distributor, socket, user, {
+              ...device,
+              availableSoundCardIds: device.availableSoundCardIds
+                ? device.availableSoundCardIds.map((id) => new ObjectId(id))
+                : [],
+              soundCardId: device.soundCardId
+                ? new ObjectId(device.soundCardId)
+                : null,
+              userId: user._id,
+            })
           )
           .catch((e) => {
             socket.disconnect();

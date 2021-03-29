@@ -5,7 +5,14 @@ module.exports = {
         "plugin:promise/recommended"
     ],
     rules: {
-        "no-underscore-dangle": 0
+        "no-underscore-dangle": 0,
+        "@typescript-eslint/naming-convention": [
+            0,
+            {
+                "format": ["camelCase"],
+                "leadingUnderscore": "allow"
+            },
+        ],
     },
     parserOptions: {
         project: './tsconfig.json'
