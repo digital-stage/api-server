@@ -1,5 +1,5 @@
 import ITeckosSocket from "teckos/lib/types/ITeckosSocket";
-import { ObjectId } from "mongodb";
+import {ObjectId} from "mongodb";
 import User from "../types/model/User";
 import Device from "../types/model/Device";
 import ClientDeviceEvents from "../types/ClientDeviceEvents";
@@ -9,7 +9,7 @@ import ServerDeviceEvents from "../types/ServerDeviceEvents";
 import ClientDevicePayloads from "../types/ClientDevicePayloads";
 import ChatMessage from "../types/model/ChatMessage";
 
-const { error, trace } = useLogger("socket:client");
+const {error, trace} = useLogger("socket:client");
 
 const handleSocketClientConnection = async (
   distributor: Distributor,
@@ -42,7 +42,7 @@ const handleSocketClientConnection = async (
   socket.on("disconnect", () => {
     if (device.uuid) {
       trace(`Set device ${device._id} offline`);
-      return distributor.updateDevice(user._id, device._id, { online: false });
+      return distributor.updateDevice(user._id, device._id, {online: false});
     }
     trace(`Removing device ${device._id}`);
     return distributor.deleteDevice(device._id);
@@ -69,7 +69,7 @@ const handleSocketClientConnection = async (
     ClientDeviceEvents.ChangeDevice,
     (payload: ClientDevicePayloads.ChangeDevice) => {
       trace(`${user.name}: ${ClientDeviceEvents.ChangeDevice}(${payload})`);
-      const { _id, ...data } = payload;
+      const {_id, ...data} = payload;
       const id = new ObjectId(_id);
       return distributor
         .updateDevice(new ObjectId(user._id), id, {
@@ -115,7 +115,11 @@ const handleSocketClientConnection = async (
         .readUser(user._id)
         .then((currentUser) => {
           if (currentUser.canCreateStage) {
-            return distributor.createStage(payload);
+            return distributor.createStage({
+              ...payload,
+              admins: payload.admins ? [...payload.admins, user._id] : [user._id],
+              soundEditors: payload.soundEditors ? [...payload.soundEditors, user._id] : [user._id]
+            });
           }
           throw new Error(
             `User ${user.name} has no privileges to create a stage`
@@ -128,7 +132,7 @@ const handleSocketClientConnection = async (
     ClientDeviceEvents.ChangeStage,
     (payload: ClientDevicePayloads.ChangeStage) => {
       trace(`${user.name}: ${ClientDeviceEvents.ChangeStage}(${payload})`);
-      const { _id, ...data } = payload;
+      const {_id, ...data} = payload;
       const id = new ObjectId(_id);
       return distributor
         .readAdministratedStage(user._id, id)
@@ -197,7 +201,7 @@ const handleSocketClientConnection = async (
     ClientDeviceEvents.ChangeGroup,
     (payload: ClientDevicePayloads.ChangeGroup) => {
       trace(`${user.name}: ${ClientDeviceEvents.ChangeGroup}(${payload})`);
-      const { _id, ...data } = payload;
+      const {_id, ...data} = payload;
       const id = new ObjectId(_id);
       return distributor
         .readGroup(id)
@@ -323,7 +327,7 @@ const handleSocketClientConnection = async (
       trace(
         `${user.name}: ${ClientDeviceEvents.ChangeStageMember}(${payload})`
       );
-      const { _id, ...data } = payload;
+      const {_id, ...data} = payload;
       const id = new ObjectId(_id);
       return distributor
         .readStageMember(id)
@@ -477,7 +481,7 @@ const handleSocketClientConnection = async (
       trace(
         `${user.name}: ${ClientDeviceEvents.ChangeLocalAudioTrack}(${payload})`
       );
-      const { _id, ...data } = payload;
+      const {_id, ...data} = payload;
       const id = new ObjectId(_id);
       return distributor
         .updateLocalAudioTrack(user._id, id, data)
@@ -518,7 +522,7 @@ const handleSocketClientConnection = async (
       trace(
         `${user.name}: ${ClientDeviceEvents.ChangeLocalVideoTrack}(${payload})`
       );
-      const { _id, ...data } = payload;
+      const {_id, ...data} = payload;
       const id = new ObjectId(_id);
       return distributor
         .updateLocalVideoTrack(user._id, id, data)
@@ -544,7 +548,7 @@ const handleSocketClientConnection = async (
       trace(
         `${user.name}: ${ClientDeviceEvents.ChangeRemoteAudioTrack}(${payload})`
       );
-      const { _id, ...data } = payload;
+      const {_id, ...data} = payload;
       const id = new ObjectId(_id);
       return distributor
         .readRemoteAudioTrack(id)

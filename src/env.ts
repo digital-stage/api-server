@@ -1,4 +1,4 @@
-import { config } from "dotenv";
+import {config} from "dotenv";
 import * as fs from "fs";
 
 config();
@@ -22,6 +22,8 @@ const DEBUG_EVENTS =
   process.env.DEBUG_EVENTS && process.env.DEBUG_EVENTS === "true";
 const DEBUG_PAYLOAD =
   process.env.DEBUG_PAYLOAD && process.env.DEBUG_PAYLOAD === "true";
+const RESTRICT_STAGE_CREATION =
+  process.env.RESTRICT_STAGE_CREATION && process.env.RESTRICT_STAGE_CREATION === "true";
 
 export {
   API_KEY,
@@ -36,4 +38,5 @@ export {
   MONGO_CA,
   USE_SENTRY,
   SENTRY_DSN,
+  RESTRICT_STAGE_CREATION
 };
