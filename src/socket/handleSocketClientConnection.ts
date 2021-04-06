@@ -8,6 +8,7 @@ import Distributor from "../distributor/Distributor";
 import ServerDeviceEvents from "../types/ServerDeviceEvents";
 import ClientDevicePayloads from "../types/ClientDevicePayloads";
 import ChatMessage from "../types/model/ChatMessage";
+import {LocalVideoTrack} from "../types";
 
 const {error, trace} = useLogger("socket:client");
 
@@ -48,7 +49,13 @@ const handleSocketClientConnection = async (
     return distributor.deleteDevice(device._id);
   });
 
+  await distributor.readDevicesByUser(user._id).then(
+    devices => Promise.all(devices.map(device => Distributor.sendToDevice(socket, ServerDeviceEvents.DeviceAdded, device))));
+
   Distributor.sendToDevice(socket, ServerDeviceEvents.LocalDeviceReady, device);
+
+  // Send sound cards
+  await distributor.sendDeviceConfigurationToDevice(socket, user);
 
   // USER
   socket.on(
@@ -117,8 +124,12 @@ const handleSocketClientConnection = async (
           if (currentUser.canCreateStage) {
             return distributor.createStage({
               ...payload,
-              admins: payload.admins ? [...payload.admins, user._id] : [user._id],
-              soundEditors: payload.soundEditors ? [...payload.soundEditors, user._id] : [user._id]
+              admins: payload.admins
+                ? [...payload.admins, user._id]
+                : [user._id],
+              soundEditors: payload.soundEditors
+                ? [...payload.soundEditors, user._id]
+                : [user._id],
             });
           }
           throw new Error(
@@ -461,7 +472,7 @@ const handleSocketClientConnection = async (
 
   socket.on(
     ClientDeviceEvents.CreateLocalAudioTrack,
-    (payload: ClientDevicePayloads.CreateLocalAudioTrack) => {
+    (payload: ClientDevicePayloads.CreateLocalAudioTrack, fn?: (error: string | null, track?: LocalVideoTrack<ObjectId>) => void) => {
       trace(
         `${user.name}: ${ClientDeviceEvents.CreateLocalAudioTrack}(${payload})`
       );
@@ -472,7 +483,16 @@ const handleSocketClientConnection = async (
           userId: user._id,
           deviceId: device._id,
         })
-        .catch((e) => error(e));
+        .then(track => {
+          if (fn) {
+            fn(null, track);
+          }
+        })
+        .catch((e) => {
+          error(e);
+          if (fn)
+            fn(e);
+        });
     }
   );
   socket.on(
@@ -502,7 +522,7 @@ const handleSocketClientConnection = async (
   );
   socket.on(
     ClientDeviceEvents.CreateLocalVideoTrack,
-    (payload: ClientDevicePayloads.CreateLocalVideoTrack) => {
+    (payload: ClientDevicePayloads.CreateLocalVideoTrack, fn?: (error: string | null, track?: LocalVideoTrack<ObjectId>) => void) => {
       trace(
         `${user.name}: ${ClientDeviceEvents.CreateLocalVideoTrack}(${payload})`
       );
@@ -513,7 +533,16 @@ const handleSocketClientConnection = async (
           userId: user._id,
           deviceId: device._id,
         })
-        .catch((e) => error(e));
+        .then(track => {
+          if (fn) {
+            fn(null, track);
+          }
+        })
+        .catch((e) => {
+          error(e);
+          if (fn)
+            fn(e);
+        });
     }
   );
   socket.on(
@@ -635,7 +664,7 @@ const handleSocketClientConnection = async (
   // STAGE ASSIGNMENT HANDLING
   socket.on(
     ClientDeviceEvents.JoinStage,
-    (payload: ClientDevicePayloads.JoinStage, fn: (error?: string) => void) => {
+    (payload: ClientDevicePayloads.JoinStage, fn?: (error?: string) => void) => {
       trace(`${user.name}: ${ClientDeviceEvents.JoinStage}`);
       const stageId = new ObjectId(payload.stageId);
       const groupId = new ObjectId(payload.groupId);
@@ -644,10 +673,11 @@ const handleSocketClientConnection = async (
         .then(() =>
           trace(`${user.name} joined stage ${stageId} and group ${groupId}`)
         )
-        .then(() => fn())
+        .then(() => fn && fn())
         .catch((e) => {
           error(e);
-          return fn(e.message);
+          if (fn)
+            return fn(e.message);
         });
     }
   );
@@ -672,6 +702,7 @@ const handleSocketClientConnection = async (
     }
   );
 
+  // Send stage data
   await distributor.sendStageDataToDevice(socket, user);
   Distributor.sendToDevice(socket, ServerDeviceEvents.UserReady, user);
   socket.join(user._id.toString());

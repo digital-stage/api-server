@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import { HttpRequest } from "teckos/uws";
 import { ObjectId } from "mongodb";
-import {AUTH_URL, RESTRICT_STAGE_CREATION} from "../env";
+import { AUTH_URL, RESTRICT_STAGE_CREATION } from "../env";
 import User from "../types/model/User";
 import Distributor from "../distributor/Distributor";
 import useLogger from "../useLogger";
