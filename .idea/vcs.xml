@@ -5,6 +5,7 @@
     <mapping directory="$PROJECT_DIR$/../api-client-react" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/src/types" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/types" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../backup/router" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../web-client" vcs="Git" />
   </component>
 </project>
