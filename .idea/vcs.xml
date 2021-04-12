@@ -2,10 +2,11 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../api-client" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../api-client-react" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/src/types" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/types" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/../backup/router" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../router" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../web-client" vcs="Git" />
   </component>
 </project>

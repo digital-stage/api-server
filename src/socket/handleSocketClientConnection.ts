@@ -1060,7 +1060,7 @@ const handleSocketClientConnection = async (
     // Send stage data
     await distributor.sendStageDataToDevice(socket, user)
     Distributor.sendToDevice(socket, ServerDeviceEvents.UserReady, user)
-    socket.join(user._id.toString())
+    socket.join(user._id.toHexString())
     Distributor.sendToDevice(socket, ServerDeviceEvents.Ready)
     trace(
         `Registered socket handler for user ${user.name} and device ${device._id} at socket ${socket.id}`

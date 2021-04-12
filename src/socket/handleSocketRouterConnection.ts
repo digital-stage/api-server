@@ -14,15 +14,6 @@ const handleSocketRouterConnection = async (
     socket: ITeckosSocket,
     initialRouter: Omit<Router<ObjectId>, '_id'>
 ): Promise<Router<ObjectId>> => {
-    /*
-When router is connecting:
-- Register router in database with types
-- For all types: get unmanaged stages for this type and request management of stage
-
-When stage is created:
-- For each type: get router that supports type AND matches location as close as possible, then let
-  the resulting router manage stage
- */
     const router: Router<ObjectId> = await distributor.createRouter(initialRouter)
     socket.join(router._id.toHexString())
 
@@ -32,7 +23,7 @@ When stage is created:
     })
 
     socket.on(ClientRouterEvents.StageServed, (payload: ClientRouterPayloads.StageServed) => {
-        trace(`${router._id}: ${ClientRouterEvents.StageServed}(${payload})`)
+        trace(`${router._id}: ${ClientRouterEvents.StageServed}(${JSON.stringify(payload)})`)
         const { _id, ...update } = payload.update
         return distributor
             .updateStage(new ObjectId(_id), {
@@ -48,7 +39,7 @@ When stage is created:
     })
 
     socket.on(ClientRouterEvents.ChangeStage, (payload: ClientRouterPayloads.ChangeStage) => {
-        trace(`${router._id}: ${ClientRouterEvents.StageServed}(${payload})`)
+        trace(`${router._id}: ${ClientRouterEvents.StageServed}(${JSON.stringify(payload)})`)
         const { _id, ...update } = payload
         return distributor
             .updateStage(new ObjectId(_id), {
@@ -64,22 +55,33 @@ When stage is created:
     })
 
     socket.on(ClientRouterEvents.StageUnServed, (payload: ClientRouterPayloads.StageUnServed) => {
-        trace(`${router._id}: ${ClientRouterEvents.StageUnServed}(${payload})`)
+        trace(`${router._id}: ${ClientRouterEvents.StageUnServed}(${JSON.stringify(payload)})`)
         const { _id, ...update } = payload.update
-        return distributor.updateStage(new ObjectId(_id), update).catch((err) => error(err))
+
+        // Stage may be deleted already, since we are telling routers to unserve when deleting stages, so...
+        return distributor
+            .readStage(new ObjectId(_id))
+            .then((stage) => {
+                if (stage) return distributor.updateStage(stage._id, update)
+                return undefined
+            })
+            .catch((err) => error(err))
     })
 
     socket.on(ClientRouterEvents.ChangeRouter, (payload: ClientRouterPayloads.ChangeRouter) => {
-        trace(`${router._id}: ${ClientRouterEvents.ChangeRouter}(${payload})`)
+        trace(`${router._id}: ${ClientRouterEvents.ChangeRouter}(${JSON.stringify(payload)})`)
         // Expect supported types not changing during a websocket session, so no implementation necessary here
         const { _id, ...update } = payload
-        return distributor.updateRouter(router._id, {
-            ...update,
-        })
+        return distributor
+            .updateRouter(router._id, {
+                ...update,
+            })
+            .catch((err) => error(err))
     })
 
     socket.on(ClientRouterEvents.Ready, () => {
-        distributor.assignRoutersToStages()
+        trace(`${router._id}: ${ClientRouterEvents.Ready}`)
+        distributor.assignRoutersToStages().catch((err) => error(err))
     })
 
     socket.emit(ServerRouterEvents.Ready, router)

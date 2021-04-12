@@ -55,6 +55,8 @@ export enum Collections {
     CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES = 'c_r_ap_v',
 }
 
+ObjectId.cacheHexString = true
+
 class Distributor extends EventEmitter.EventEmitter {
     private readonly _db: Db
 
@@ -172,6 +174,41 @@ class Distributor extends EventEmitter.EventEmitter {
                     )
                 )
             ),
+            this._db
+                .collection<Stage<ObjectId>>(Collections.STAGES)
+                .find({ $or: [{ audioRouter: { $ne: null } }, { videoRouter: { $ne: null } }] })
+                .toArray()
+                .then((stages) =>
+                    stages.map(async (stage) => {
+                        // Find matching router
+                        if (
+                            stage.videoRouter !== null &&
+                            stage.audioRouter !== null &&
+                            stage.videoRouter.equals(stage.audioRouter)
+                        ) {
+                            const router = await this.readRouter(stage.videoRouter)
+                            if (!router) {
+                                await this.updateStage(stage._id, {
+                                    videoRouter: null,
+                                    audioRouter: null,
+                                })
+                            }
+                        } else {
+                            if (stage.videoRouter !== null) {
+                                const router = await this.readRouter(stage.videoRouter)
+                                if (!router) {
+                                    await this.updateStage(stage._id, { videoRouter: null })
+                                }
+                            }
+                            if (stage.audioRouter !== null) {
+                                const router = await this.readRouter(stage.audioRouter)
+                                if (!router) {
+                                    await this.updateStage(stage._id, { audioRouter: null })
+                                }
+                            }
+                        }
+                    })
+                ),
         ])
     }
 
@@ -259,6 +296,7 @@ class Distributor extends EventEmitter.EventEmitter {
                             }
                         })
                     }
+                    trace(`Found nearest router ${router._id}`)
                     return router
                 }
                 if (routers.length === 1) {
@@ -315,6 +353,8 @@ class Distributor extends EventEmitter.EventEmitter {
                                 stages.map((stage) => {
                                     trace(`Found ${stages.length}`)
                                     if (
+                                        stage.audioRouter &&
+                                        stage.videoRouter &&
                                         stage.audioRouter.equals(id) &&
                                         stage.videoRouter.equals(id)
                                     ) {
@@ -326,7 +366,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                             videoRouter: null,
                                         })
                                     }
-                                    if (stage.audioRouter.equals(id)) {
+                                    if (stage.audioRouter && stage.audioRouter.equals(id)) {
                                         trace(
                                             `Deallocate audio router ${id} from stage ${stage._id}`
                                         )
@@ -334,10 +374,15 @@ class Distributor extends EventEmitter.EventEmitter {
                                             audioRouter: null,
                                         })
                                     }
-                                    trace(`Deallocate video router ${id} from stage ${stage._id}`)
-                                    return this.updateStage(stage._id, {
-                                        videoRouter: null,
-                                    })
+                                    if (stage.videoRouter && stage.videoRouter.equals(id)) {
+                                        trace(
+                                            `Deallocate video router ${id} from stage ${stage._id}`
+                                        )
+                                        return this.updateStage(stage._id, {
+                                            videoRouter: null,
+                                        })
+                                    }
+                                    return undefined
                                 })
                             )
                         )
@@ -513,7 +558,13 @@ class Distributor extends EventEmitter.EventEmitter {
     ): Promise<LocalVideoTrack<ObjectId>> =>
         this._db
             .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
-            .insertOne({ ...initial, _id: undefined })
+            .insertOne({
+                type: '',
+                ...initial,
+                userId: initial.userId,
+                deviceId: initial.deviceId,
+                _id: undefined,
+            })
             .then((result) => result.ops[0])
             .then((localVideoTrack: LocalVideoTrack<ObjectId>) => {
                 this.emit(ServerDeviceEvents.LocalVideoTrackAdded, localVideoTrack)
@@ -1049,9 +1100,8 @@ class Distributor extends EventEmitter.EventEmitter {
             .then((result) => {
                 if (result.modifiedCount > 0) {
                     this.emit(ServerDeviceEvents.DeviceChanged, payload)
-                    return this.renewOnlineStatus(userId)
                 }
-                return null
+                return undefined
             })
     }
 
@@ -1651,6 +1701,47 @@ class Distributor extends EventEmitter.EventEmitter {
                             // Emit update
                             this.emit(ServerDeviceEvents.StageRemoved, id)
                             return this.sendToStage(id, ServerDeviceEvents.StageRemoved, id)
+                        })
+                        .then(() => {
+                            if (
+                                stage.audioRouter &&
+                                stage.videoRouter &&
+                                stage.audioRouter.equals(stage.videoRouter)
+                            ) {
+                                return this.sendToRouter(
+                                    stage.audioRouter,
+                                    ServerRouterEvents.UnServeStage,
+                                    {
+                                        kind: 'both',
+                                        type: stage.videoType,
+                                        stageId: stage._id.toHexString(),
+                                    } as ServerRouterPayloads.UnServeStage
+                                )
+                            }
+                            if (stage.audioRouter) {
+                                this.sendToRouter(
+                                    stage.audioRouter,
+                                    ServerRouterEvents.UnServeStage,
+                                    {
+                                        kind: 'audio',
+                                        type: stage.audioType,
+                                        stageId: stage._id.toHexString(),
+                                    } as ServerRouterPayloads.UnServeStage
+                                )
+                            }
+                            if (stage.videoRouter) {
+                                this.sendToRouter(
+                                    stage.videoRouter,
+                                    ServerRouterEvents.UnServeStage,
+                                    {
+                                        kind: 'video',
+                                        type: stage.videoType,
+                                        stageId: stage._id.toHexString(),
+                                    } as ServerRouterPayloads.UnServeStage
+                                )
+                            }
+
+                            return undefined
                         })
                         .then(() =>
                             this._db
@@ -2744,25 +2835,27 @@ class Distributor extends EventEmitter.EventEmitter {
     }
 
     sendToUser = (userId: ObjectId, event: string, payload?: any): void => {
+        const groupId = userId.toHexString()
         if (DEBUG_EVENTS) {
             if (DEBUG_PAYLOAD) {
-                trace(`SEND TO USER '${userId}' ${event}: ${JSON.stringify(payload)}`)
+                trace(`SEND TO USER '${groupId}' ${event}: ${JSON.stringify(payload)}`)
             } else {
-                trace(`SEND TO USER '${userId}' ${event}`)
+                trace(`SEND TO USER '${groupId}' ${event}`)
             }
         }
-        this._io.to(userId.toString(), event, payload)
+        this._io.to(userId.toHexString(), event, payload)
     }
 
     sendToRouter = (routerId: ObjectId, event: string, payload?: any): void => {
+        const groupId = routerId.toHexString()
         if (DEBUG_EVENTS) {
             if (DEBUG_PAYLOAD) {
-                trace(`SEND TO ROUTER '${routerId}' ${event}: ${JSON.stringify(payload)}`)
+                trace(`SEND TO ROUTER '${groupId}' ${event}: ${JSON.stringify(payload)}`)
             } else {
-                trace(`SEND TO ROUTER '${routerId}' ${event}`)
+                trace(`SEND TO ROUTER '${groupId}' ${event}`)
             }
         }
-        this._io.to(routerId.toString(), event, payload)
+        this._io.to(groupId, event, payload)
     }
 
     sendToAll = (event: string, payload?: any): void => {

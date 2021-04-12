@@ -2,10 +2,11 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../api-client/.idea/api-client.iml" filepath="$PROJECT_DIR$/../api-client/.idea/api-client.iml" />
       <module fileurl="file://$PROJECT_DIR$/../api-client-js/.idea/api-client-js.iml" filepath="$PROJECT_DIR$/../api-client-js/.idea/api-client-js.iml" />
       <module fileurl="file://$PROJECT_DIR$/../api-client-react/.idea/api-client-react.iml" filepath="$PROJECT_DIR$/../api-client-react/.idea/api-client-react.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/api-server.iml" filepath="$PROJECT_DIR$/.idea/api-server.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../backup/router/.idea/router.iml" filepath="$PROJECT_DIR$/../backup/router/.idea/router.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../router/.idea/router.iml" filepath="$PROJECT_DIR$/../router/.idea/router.iml" />
       <module fileurl="file://$PROJECT_DIR$/../web-client/.idea/web-client.iml" filepath="$PROJECT_DIR$/../web-client/.idea/web-client.iml" />
     </modules>
   </component>
