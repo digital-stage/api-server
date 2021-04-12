@@ -1,8 +1,8 @@
 interface AuthUser {
-  _id: string;
-  name: string;
-  email: string;
-  avatarUrl?: string;
+    _id: string
+    name: string
+    email: string
+    avatarUrl?: string
 }
 
-export default AuthUser;
+export default AuthUser
