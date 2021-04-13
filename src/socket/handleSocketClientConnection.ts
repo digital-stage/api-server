@@ -36,6 +36,7 @@ const handleSocketClientConnection = async (
         device = await distributor.createDevice({
             ...initialDevice,
             userId: user._id,
+            online: true,
         })
     }
 
@@ -58,14 +59,16 @@ const handleSocketClientConnection = async (
                         tracks.map((track) => distributor.deleteLocalAudioTrack(user._id, track))
                     )
                 ),
-        ]).then(() => {
-            if (device.uuid) {
-                trace(`Set device ${device._id} offline`)
-                return distributor.updateDevice(user._id, device._id, { online: false })
-            }
-            trace(`Removing device ${device._id}`)
-            return distributor.deleteDevice(device._id)
-        })
+        ])
+            .then(() => {
+                if (device.uuid) {
+                    trace(`Set device ${device._id} offline`)
+                    return distributor.updateDevice(user._id, device._id, { online: false })
+                }
+                trace(`Removing device ${device._id}`)
+                return distributor.deleteDevice(device._id)
+            })
+            .catch((err) => error(err))
     })
 
     await distributor
@@ -276,6 +279,7 @@ const handleSocketClientConnection = async (
                         return distributor.createGroup({
                             name: payload.name,
                             description: '',
+                            directivity: 'omni',
                             x: 0,
                             y: 0,
                             z: 0,

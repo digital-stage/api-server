@@ -1255,12 +1255,30 @@ class Distributor extends EventEmitter.EventEmitter {
 
         const wasUserAlreadyInStage = stageMember !== null
         if (!wasUserAlreadyInStage) {
+            const order = await this._db
+                .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
+                .find({ stageId: stage._id })
+                .toArray()
+                .then((stageMembers) => {
+                    if (stageMembers) {
+                        for (let i = 0; i < 30; i += 1) {
+                            if (!stageMembers.find((current) => current.order === i)) {
+                                return i
+                            }
+                        }
+                        return -1
+                    }
+                    return 0
+                })
+            if (order === -1) throw new Error('No more members possible, max of 30 reached')
             stageMember = await this.createStageMember({
                 userId: user._id,
                 stageId: stage._id,
                 groupId,
+                order,
                 online: true,
                 isDirector: false,
+                sendLocal: false,
                 ...DefaultVolumeProperties,
                 ...DefaultThreeDimensionalProperties,
             })
@@ -2117,6 +2135,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                 rX: group.rX,
                                 rY: group.rY,
                                 rZ: group.rZ,
+                                directivity: group.directivity,
                                 ...update,
                                 deviceId,
                                 userId,
@@ -2307,6 +2326,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                 rX: stageMember.rX,
                                 rY: stageMember.rY,
                                 rZ: stageMember.rZ,
+                                directivity: stageMember.directivity,
                                 ...update,
                                 userId,
                                 stageMemberId,
@@ -2503,6 +2523,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                 rX: audioProducer.rX,
                                 rY: audioProducer.rY,
                                 rZ: audioProducer.rZ,
+                                directivity: audioProducer.directivity,
                                 ...update,
                                 deviceId,
                                 userId,
