@@ -2108,6 +2108,10 @@ class Distributor extends EventEmitter.EventEmitter {
                 { userId, groupId, deviceId },
                 {
                     $set: update,
+                    $setOnInsert: {
+                        ...DefaultThreeDimensionalProperties,
+                        ...update,
+                    },
                 },
                 { upsert: true, projection: { _id: 1 } }
             )
@@ -2205,6 +2209,11 @@ class Distributor extends EventEmitter.EventEmitter {
                 { userId, groupId, deviceId },
                 {
                     $set: update,
+                    $setOnInsert: {
+                        volume: 1,
+                        muted: false,
+                        ...update,
+                    },
                 },
                 { upsert: true, projection: { _id: 1 } }
             )
@@ -2299,6 +2308,10 @@ class Distributor extends EventEmitter.EventEmitter {
                 { userId, stageMemberId, deviceId },
                 {
                     $set: update,
+                    $setOnInsert: {
+                        ...DefaultThreeDimensionalProperties,
+                        ...update,
+                    },
                 },
                 { upsert: true, projection: { _id: 1 } }
             )
@@ -2397,9 +2410,14 @@ class Distributor extends EventEmitter.EventEmitter {
         this._db
             .collection<CustomStageMemberVolume<ObjectId>>(Collections.CUSTOM_STAGE_MEMBER_VOLUMES)
             .findOneAndUpdate(
-                { userId, stageMemberId },
+                { userId, stageMemberId, deviceId },
                 {
                     $set: update,
+                    $setOnInsert: {
+                        volume: 1,
+                        muted: false,
+                        ...update,
+                    },
                 },
                 { upsert: true, projection: { _id: 1 } }
             )
@@ -2494,6 +2512,10 @@ class Distributor extends EventEmitter.EventEmitter {
                 { userId, remoteAudioTrackId, deviceId },
                 {
                     $set: update,
+                    $setOnInsert: {
+                        ...DefaultThreeDimensionalProperties,
+                        ...update,
+                    },
                 },
                 { upsert: true, projection: { _id: 1 } }
             )
@@ -2601,6 +2623,11 @@ class Distributor extends EventEmitter.EventEmitter {
                 { userId, remoteAudioTrackId, deviceId },
                 {
                     $set: update,
+                    $setOnInsert: {
+                        volume: 1.0,
+                        muted: false,
+                        ...update,
+                    },
                 },
                 { upsert: true, projection: { _id: 1 } }
             )
