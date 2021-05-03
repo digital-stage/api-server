@@ -1,7 +1,20 @@
 import { config } from 'dotenv'
+import * as dotenvExpand from 'dotenv-expand'
 import * as fs from 'fs'
 
-config()
+const getEnvPath = () => {
+    if (fs.existsSync('.env.local')) return '.env.local'
+    if (fs.existsSync('.env')) return '.env'
+    if (fs.existsSync(`.env.${process.env.NODE_ENV}`)) return `.env.${process.env.NODE_ENV}`
+    throw new Error(
+        `No environmental file (.env.local, .env or .env.${process.env.NODE_ENV}) provided!`
+    )
+}
+
+const envPath = getEnvPath()
+console.info(`Loaded env from ${envPath}`)
+const env = config({ path: envPath })
+dotenvExpand(env)
 
 const { MONGO_URL, REDIS_URL, MONGO_DB, PORT, AUTH_URL, API_KEY, SENTRY_DSN } = process.env
 

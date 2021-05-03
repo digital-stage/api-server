@@ -1,11 +1,13 @@
 import { ITeckosSocket } from 'teckos'
 import { ObjectId } from 'mongodb'
-import Router from '../types/model/Router'
+import {
+    Router,
+    ServerRouterEvents,
+    ClientRouterEvents,
+    ClientRouterPayloads,
+} from '@digitalstage/api-types'
 import Distributor from '../distributor/Distributor'
-import ClientRouterEvents from '../types/ClientRouterEvents'
 import useLogger from '../useLogger'
-import ServerRouterEvents from '../types/ServerRouterEvents'
-import ClientRouterPayloads from '../types/ClientRouterPayloads'
 
 const { error, trace } = useLogger('socket:router')
 

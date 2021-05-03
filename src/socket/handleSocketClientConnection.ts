@@ -1,14 +1,18 @@
 import ITeckosSocket from 'teckos/lib/types/ITeckosSocket'
 import { ObjectId } from 'mongodb'
-import User from '../types/model/User'
-import Device from '../types/model/Device'
-import ClientDeviceEvents from '../types/ClientDeviceEvents'
+import {
+    User,
+    Device,
+    Group,
+    LocalVideoTrack,
+    Stage,
+    ClientDeviceEvents,
+    ServerDeviceEvents,
+    ClientDevicePayloads,
+    ChatMessage,
+} from '@digitalstage/api-types'
 import useLogger from '../useLogger'
 import Distributor from '../distributor/Distributor'
-import ServerDeviceEvents from '../types/ServerDeviceEvents'
-import ClientDevicePayloads from '../types/ClientDevicePayloads'
-import ChatMessage from '../types/model/ChatMessage'
-import { Group, LocalVideoTrack, Stage } from '../types'
 
 const { error, trace } = useLogger('socket:client')
 

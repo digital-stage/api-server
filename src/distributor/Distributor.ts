@@ -1,40 +1,41 @@
 import { Db, ObjectId } from 'mongodb'
 import { ITeckosProvider, ITeckosSocket } from 'teckos'
 import * as EventEmitter from 'events'
+import {
+    Router,
+    RemoteAudioTrack,
+    RemoteVideoTrack,
+    Stage,
+    StageMember,
+    SoundCard,
+    Device,
+    Group,
+    CustomGroupVolume,
+    CustomGroupPosition,
+    CustomStageMemberVolume,
+    CustomRemoteAudioTrackPosition,
+    ServerDeviceEvents,
+    User,
+    CustomStageMemberPosition,
+    ServerDevicePayloads,
+    ServerRouterEvents,
+    ServerRouterPayloads,
+    StageDevice,
+    LocalVideoTrack,
+    LocalAudioTrack,
+    CustomRemoteAudioTrackVolume,
+    CustomStageDevicePosition,
+    CustomStageDeviceVolume,
+    StagePackage,
+    ThreeDimensionalProperties,
+    InitialStagePackage,
+    DefaultThreeDimensionalProperties,
+    DefaultVolumeProperties,
+} from '@digitalstage/api-types'
 import { DEBUG_EVENTS, DEBUG_PAYLOAD } from '../env'
 import useLogger from '../useLogger'
 import generateColor from '../utils/generateColor'
-import Router from '../types/model/Router'
-import RemoteAudioTrack from '../types/model/RemoteAudioTrack'
-import RemoteVideoTrack from '../types/model/RemoteVideoTrack'
-import Stage from '../types/model/Stage'
-import StageMember from '../types/model/StageMember'
-import SoundCard from '../types/model/SoundCard'
-import Device from '../types/model/Device'
-import Group from '../types/model/Group'
-import CustomGroupVolume from '../types/model/CustomGroupVolume'
-import CustomGroupPosition from '../types/model/CustomGroupPosition'
-import CustomStageMemberVolume from '../types/model/CustomStageMemberVolume'
-import CustomStageMemberPosition from '../types/model/CustomStageMemberPosition'
-import CustomRemoteAudioTrackVolume from '../types/model/CustomRemoteAudioTrackVolume'
-import CustomRemoteAudioTrackPosition from '../types/model/CustomRemoteAudioTrackPosition'
-import User from '../types/model/User'
-import ServerDeviceEvents from '../types/ServerDeviceEvents'
-import LocalAudioTrack from '../types/model/LocalAudioTrack'
-import LocalVideoTrack from '../types/model/LocalVideoTrack'
-import StagePackage from '../types/model/StagePackage'
-import ThreeDimensionalProperties, {
-    DefaultThreeDimensionalProperties,
-} from '../types/model/ThreeDimensionalProperties'
-import InitialStagePackage from '../types/model/InitialStagePackage'
-import { DefaultVolumeProperties } from '../types/model/VolumeProperties'
 import getDistance from '../utils/getDistance'
-import ServerRouterEvents from '../types/ServerRouterEvents'
-import ServerDevicePayloads from '../types/ServerDevicePayloads'
-import ServerRouterPayloads from '../types/ServerRouterPayloads'
-import StageDevice from '../types/model/StageDevice'
-import CustomStageDeviceVolume from '../types/model/CustomStageDeviceVolume'
-import CustomStageDevicePosition from '../types/model/CustomStageDevicePosition'
 
 const { error, trace, warn } = useLogger('distributor')
 
