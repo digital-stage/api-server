@@ -3,7 +3,7 @@ import debug, { Debugger } from 'debug'
 import * as Sentry from '@sentry/node'
 import * as uncaught from 'uncaught'
 import * as Tracing from '@sentry/tracing'
-import { CaptureConsole, RewriteFrames } from '@sentry/integrations'
+// import { CaptureConsole, RewriteFrames } from '@sentry/integrations'
 import { SENTRY_DSN, USE_SENTRY } from './env'
 
 const d = debug('server')
@@ -26,12 +26,12 @@ if (USE_SENTRY) {
 
         integrations: [
             new Tracing.Integrations.Mongo(),
-            new CaptureConsole({
+            /* new CaptureConsole({
                 levels: ['warn', 'error'],
             }),
             new RewriteFrames({
                 root: global.__rootdir__,
-            }),
+            }), */
         ],
 
         // We recommend adjusting this value in production, or using tracesSampler
@@ -53,6 +53,7 @@ if (USE_SENTRY) {
     reportError.log = console.error.bind(console)
     uncaught.addListener((e) => {
         reportError('Uncaught error or rejection: ', e.message)
+        reportError('Trace: ', e.trace)
     })
 }
 

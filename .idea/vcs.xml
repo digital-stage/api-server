@@ -7,6 +7,8 @@
     <mapping directory="$PROJECT_DIR$/src/types" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/types" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../router" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../teckos" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../teckos-client" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../web-client" vcs="Git" />
   </component>
 </project>

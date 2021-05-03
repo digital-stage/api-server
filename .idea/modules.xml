@@ -7,6 +7,8 @@
       <module fileurl="file://$PROJECT_DIR$/../api-client-react/.idea/api-client-react.iml" filepath="$PROJECT_DIR$/../api-client-react/.idea/api-client-react.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/api-server.iml" filepath="$PROJECT_DIR$/.idea/api-server.iml" />
       <module fileurl="file://$PROJECT_DIR$/../router/.idea/router.iml" filepath="$PROJECT_DIR$/../router/.idea/router.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../teckos/.idea/teckos.iml" filepath="$PROJECT_DIR$/../teckos/.idea/teckos.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../teckos-client/.idea/teckos-client.iml" filepath="$PROJECT_DIR$/../teckos-client/.idea/teckos-client.iml" />
       <module fileurl="file://$PROJECT_DIR$/../web-client/.idea/web-client.iml" filepath="$PROJECT_DIR$/../web-client/.idea/web-client.iml" />
     </modules>
   </component>

@@ -9,5 +9,7 @@
     <orderEntry type="module" module-name="web-client" />
     <orderEntry type="module" module-name="router" />
     <orderEntry type="module" module-name="api-client" />
+    <orderEntry type="module" module-name="teckos-client" />
+    <orderEntry type="module" module-name="teckos" />
   </component>
 </module>
