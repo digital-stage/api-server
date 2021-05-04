@@ -443,7 +443,8 @@ class Distributor extends EventEmitter.EventEmitter {
                     if (result.value.stageId) {
                         return this.sendToJoinedStageMembers(
                             result.value.stageId,
-                            ServerDeviceEvents.RemoteUserChanged
+                            ServerDeviceEvents.RemoteUserChanged,
+                            payload
                         )
                     }
                     return undefined
@@ -471,7 +472,8 @@ class Distributor extends EventEmitter.EventEmitter {
                     if (result.value.stageId) {
                         return this.sendToJoinedStageMembers(
                             result.value.stageId,
-                            ServerDeviceEvents.RemoteUserChanged
+                            ServerDeviceEvents.RemoteUserChanged,
+                            payload
                         )
                     }
                 }
@@ -542,6 +544,28 @@ class Distributor extends EventEmitter.EventEmitter {
                 apiServer: this._apiServer,
             })
             .then((result) => result.ops[0])
+            .then(async (device) => {
+                const stageMembers = await this._db
+                    .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
+                    .find({ userId: device.userId })
+                    .toArray()
+                await Promise.all(
+                    stageMembers.map((stageMember) =>
+                        this.createStageDevice({
+                            userId: device.userId,
+                            deviceId: device._id,
+                            stageId: stageMember.stageId,
+                            groupId: stageMember.groupId,
+                            stageMemberId: stageMember._id,
+                            active: device.online,
+                            sendLocal: true,
+                            ...DefaultThreeDimensionalProperties,
+                            ...DefaultVolumeProperties,
+                        })
+                    )
+                )
+                return device
+            })
             .then((device) => {
                 if (device.requestSession) {
                     trace('Generating UUID session for new device')
@@ -619,11 +643,13 @@ class Distributor extends EventEmitter.EventEmitter {
                                 { stageId, deviceId: result.value._id },
                                 { projection: { _id: 1 } }
                             )
-                            .then((stageDevice) =>
-                                this.updateStageDevice(stageDevice._id, {
-                                    active: update.online,
-                                })
-                            )
+                            .then((stageDevice) => {
+                                if (stageDevice)
+                                    this.updateStageDevice(stageDevice._id, {
+                                        active: update.online,
+                                    })
+                                return null
+                            })
                     }
                 }
                 return undefined
@@ -914,7 +940,7 @@ class Distributor extends EventEmitter.EventEmitter {
             .collection<Stage<ObjectId>>(Collections.STAGES)
             .updateOne({ _id: id }, { $set: update })
             .then((response) => {
-                if (response.modifiedCount > 0) {
+                if (response.matchedCount > 0) {
                     const payload = {
                         ...update,
                         _id: id,
@@ -1324,52 +1350,51 @@ class Distributor extends EventEmitter.EventEmitter {
                 order,
             })
             .then((result) => result.ops[0] as StageDevice<ObjectId>)
-            .then((stageDevice) => {
-                this.emit(ServerDeviceEvents.StageMemberAdded, stageDevice)
-                return Promise.all([
-                    this.sendToJoinedStageMembers(
-                        stageDevice.stageId,
-                        ServerDeviceEvents.StageDeviceAdded,
-                        stageDevice
-                    ),
-                    // Also add remote audio and video tracks for the corresponding local audio tracks
-                    this._db
+            .then(async (stageDevice) => {
+                this.emit(ServerDeviceEvents.StageDeviceAdded, stageDevice)
+                if (stageDevice.active) {
+                    const localAudioTracks = await this._db
                         .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
                         .find({ deviceId: stageDevice.deviceId })
                         .toArray()
-                        .then((localAudioTracks) =>
-                            localAudioTracks.map((localAudioTrack) =>
-                                this.createRemoteAudioTrack({
-                                    ...localAudioTrack,
-                                    userId: stageDevice.userId,
-                                    deviceId: stageDevice.deviceId,
-                                    stageId: stageDevice.stageId,
-                                    groupId: stageDevice.groupId,
-                                    stageMemberId: stageDevice.stageMemberId,
-                                    stageDeviceId: stageDevice._id,
-                                    localAudioTrackId: localAudioTrack._id,
-                                })
-                            )
-                        ),
-                    this._db
+                    const localVideoTracks = await this._db
                         .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
                         .find({ deviceId: stageDevice.deviceId })
                         .toArray()
-                        .then((localVideoTracks) =>
-                            localVideoTracks.map((localVideoTrack) =>
-                                this.createRemoteAudioTrack({
-                                    ...localVideoTrack,
-                                    userId: stageDevice.userId,
-                                    deviceId: stageDevice.deviceId,
-                                    stageId: stageDevice.stageId,
-                                    groupId: stageDevice.groupId,
-                                    stageMemberId: stageDevice.stageMemberId,
-                                    stageDeviceId: stageDevice._id,
-                                    localAudioTrackId: localVideoTrack._id,
-                                })
-                            )
+                    await Promise.all([
+                        localAudioTracks.forEach((localAudioTrack) =>
+                            this.createRemoteAudioTrack({
+                                ...localAudioTrack,
+                                userId: stageDevice.userId,
+                                deviceId: stageDevice.deviceId,
+                                stageId: stageDevice.stageId,
+                                groupId: stageDevice.groupId,
+                                stageMemberId: stageDevice.stageMemberId,
+                                stageDeviceId: stageDevice._id,
+                                localAudioTrackId: localAudioTrack._id,
+                            })
                         ),
-                ]).then(() => stageDevice)
+                        localVideoTracks.forEach((localVideoTrack) =>
+                            this.createRemoteVideoTrack({
+                                ...localVideoTrack,
+                                userId: stageDevice.userId,
+                                deviceId: stageDevice.deviceId,
+                                stageId: stageDevice.stageId,
+                                groupId: stageDevice.groupId,
+                                stageMemberId: stageDevice.stageMemberId,
+                                stageDeviceId: stageDevice._id,
+                                localAudioTrackId: localVideoTrack._id,
+                                online: stageDevice.active,
+                            })
+                        ),
+                        this.sendToJoinedStageMembers(
+                            stageDevice.stageId,
+                            ServerDeviceEvents.StageDeviceAdded,
+                            stageDevice
+                        ),
+                    ])
+                }
+                return stageDevice
             })
     }
 
@@ -1384,7 +1409,11 @@ class Distributor extends EventEmitter.EventEmitter {
     ): Promise<void> =>
         this._db
             .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
-            .findOneAndUpdate({ _id: id }, { $set: update }, { projection: { stageId: 1 } })
+            .findOneAndUpdate(
+                { _id: id },
+                { $set: update },
+                { projection: { stageId: 1, deviceId: 1 } }
+            )
             .then(async (result) => {
                 if (result.value) {
                     const payload = {
@@ -1393,6 +1422,29 @@ class Distributor extends EventEmitter.EventEmitter {
                     }
                     this.emit(ServerDeviceEvents.StageDeviceChanged, payload)
                     if (update.active !== undefined) {
+                        if (!update.active) {
+                            // Remove all remote video and audio tracks
+                            const remoteAudioTracks = await this._db
+                                .collection<RemoteAudioTrack<ObjectId>>(
+                                    Collections.REMOTE_AUDIO_TRACKS
+                                )
+                                .find({ stageDeviceId: id }, { projection: { _id: 1 } })
+                                .toArray()
+                            const remoteVideoTracks = await this._db
+                                .collection<RemoteVideoTrack<ObjectId>>(
+                                    Collections.REMOTE_AUDIO_TRACKS
+                                )
+                                .find({ stageDeviceId: id }, { projection: { _id: 1 } })
+                                .toArray()
+                            await Promise.all([
+                                remoteAudioTracks.map((remoteAudioTrack) =>
+                                    this.deleteRemoteAudioTrack(remoteAudioTrack._id)
+                                ),
+                                remoteVideoTracks.map((remoteVideoTrack) =>
+                                    this.deleteRemoteVideoTrack(remoteVideoTrack._id)
+                                ),
+                            ])
+                        }
                         await Promise.all([
                             this._db
                                 .collection<RemoteAudioTrack<ObjectId>>(
@@ -1799,7 +1851,6 @@ class Distributor extends EventEmitter.EventEmitter {
                 stageId: initial.stageId,
                 stageMemberId: initial.stageMemberId,
                 stageDeviceId: initial.stageDeviceId,
-                online: initial.online,
                 type: initial.type,
                 _id: undefined,
             })
@@ -2881,6 +2932,34 @@ class Distributor extends EventEmitter.EventEmitter {
                 await this.updateStageMember(previousObjectId, { active: false })
             }
         }
+
+        // Also publish all local audio and video tracks
+
+        // Add remote representations for all local audio and video tracks
+        /*
+    const localVideoTracks = await this._db
+      .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
+      .find({userId: })
+      .toArray();
+    for(const localVideoTrack of localVideoTracks) {
+      await this.createRemoteVideoTrack({
+        ...localVideoTrack,
+        _id: undefined,
+        userId: user._id,
+        deviceId: stageDevice.deviceId,
+        stageId: user.stageId,
+        stageDeviceId: stageDevice._id,
+        stageMemberId: user.stageMemberId,
+        localAudioTrack: localAudioTrack._id,
+      });
+    }
+    const localAudioTracks = await this._db
+      .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
+      .find({deviceId: result.value.deviceId})
+      .toArray();
+    for(const remoteAudioTrack of remoteAudioTracks) {
+      await this.createRemoteAudioTrack(remoteAudioTrack._id);
+    } */
 
         trace(`joinStage: ${Date.now() - startTime}ms`)
     }

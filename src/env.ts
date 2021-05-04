@@ -12,11 +12,13 @@ const getEnvPath = () => {
 }
 
 const envPath = getEnvPath()
-console.info(`Loaded env from ${envPath}`)
 const env = config({ path: envPath })
 dotenvExpand(env)
 
 const { MONGO_URL, REDIS_URL, MONGO_DB, PORT, AUTH_URL, API_KEY, SENTRY_DSN } = process.env
+
+console.info(`Loaded env from ${envPath}`)
+console.info(`Using auth server at ${AUTH_URL}`)
 
 const MONGO_CA = process.env.MONGO_CA ? [fs.readFileSync(process.env.MONGO_CA)] : undefined
 const USE_REDIS = process.env.USE_REDIS && process.env.USE_REDIS === 'true'

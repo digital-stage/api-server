@@ -12,6 +12,7 @@ module.exports = {
     ],
     rules: {
         "no-underscore-dangle": 0,
+        "promise/no-nesting": 0,
         "@typescript-eslint/naming-convention": [
             0,
             {
