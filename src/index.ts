@@ -22,6 +22,10 @@ const io = new UWSProvider(uws, {
     redisUrl: REDIS_URL,
 })
 
+uws.get('/beat', (res) => {
+    res.end('Boom!')
+})
+
 let mongoClient = new MongoClient(MONGO_URL, {
     poolSize: 10,
     bufferMaxEntries: 0,
