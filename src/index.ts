@@ -2,7 +2,8 @@ import { UWSProvider } from 'teckos'
 import * as uWS from 'teckos/uws'
 import { MongoClient } from 'mongodb'
 import { address } from 'ip'
-import { MONGO_DB, MONGO_URL, PORT, REDIS_URL } from './env'
+import * as fs from 'fs'
+import { MONGO_CA, MONGO_DB, MONGO_URL, PORT, REDIS_URL } from './env'
 import useLogger from './useLogger'
 import handleSocketConnection from './socket/handleSocketConnection'
 import Distributor from './distributor/Distributor'
@@ -27,7 +28,10 @@ uws.get('/beat', (res) => {
 })
 
 let mongoClient = new MongoClient(MONGO_URL, {
+    sslValidate: !!MONGO_CA,
+    sslCA: MONGO_CA,
     poolSize: 10,
+    maxPoolSize: 100,
     bufferMaxEntries: 0,
     useNewUrlParser: true,
     useUnifiedTopology: true,
