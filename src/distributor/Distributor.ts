@@ -1383,7 +1383,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                 groupId: stageDevice.groupId,
                                 stageMemberId: stageDevice.stageMemberId,
                                 stageDeviceId: stageDevice._id,
-                                localAudioTrackId: localVideoTrack._id,
+                                localVideoTrackId: localVideoTrack._id,
                                 online: stageDevice.active,
                             })
                         ),
@@ -1732,7 +1732,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                             stageId: user.stageId,
                                             stageDeviceId: stageDevice._id,
                                             stageMemberId: user.stageMemberId,
-                                            localAudioTrack: localAudioTrack._id,
+                                            localAudioTrackId: localAudioTrack._id,
                                         })
                                     )
                             }
@@ -2950,7 +2950,7 @@ class Distributor extends EventEmitter.EventEmitter {
         stageId: user.stageId,
         stageDeviceId: stageDevice._id,
         stageMemberId: user.stageMemberId,
-        localAudioTrack: localAudioTrack._id,
+        localAudioTrackId: localAudioTrack._id,
       });
     }
     const localAudioTracks = await this._db
