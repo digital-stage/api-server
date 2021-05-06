@@ -352,7 +352,7 @@ const handleSocketClientConnection = async (
                 return null
             }
             return distributor
-                .upsertSoundCard(new ObjectId(user._id), uuid, update)
+                .upsertSoundCard(user._id, device._id, uuid, update)
                 .then((id: ObjectId) => {
                     if (fn) {
                         return fn(null, id)

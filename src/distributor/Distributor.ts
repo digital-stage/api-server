@@ -756,14 +756,16 @@ class Distributor extends EventEmitter.EventEmitter {
     /* SOUND CARD */
     upsertSoundCard(
         userId: ObjectId,
+        deviceId: ObjectId,
         uuid: string,
-        update: Partial<Omit<SoundCard<ObjectId>, '_id' | 'userId' | 'uuid'>>
+        update: Partial<Omit<SoundCard<ObjectId>, '_id' | 'userId' | 'deviceId' | 'uuid'>>
     ): Promise<ObjectId> {
         return this._db
             .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
             .findOneAndUpdate(
                 {
                     userId,
+                    deviceId,
                     uuid,
                 },
                 {
