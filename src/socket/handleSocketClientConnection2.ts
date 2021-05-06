@@ -1,5 +1,5 @@
 import ITeckosSocket from 'teckos/lib/types/ITeckosSocket'
-import { Device, User, InitialDevice } from '@digitalstage/api-types'
+import { Device, User } from '@digitalstage/api-types'
 import { Db, ObjectId } from 'mongodb'
 import { Collections } from '../distributor/Distributor'
 
@@ -33,14 +33,33 @@ const handleSocketClientConnection = async (
             device = await db
                 .collection<Device<ObjectId>>(Collections.DEVICES)
                 .insertOne({
-                    ...InitialDevice,
+                    uuid: null,
+                    type: 'unknown',
+                    requestSession: false,
+                    canAudio: false,
+                    canVideo: false,
+                    receiveAudio: false,
+                    receiveVideo: false,
+                    sendAudio: false,
+                    sendVideo: false,
+                    ovRawMode: false,
+                    ovRenderISM: false,
+                    ovP2p: true,
+                    ovReceiverType: 'ortf',
+                    ovRenderReverb: true,
+                    ovReverbGain: 0.4,
+                    canOv: false,
+                    volume: 1,
+                    egoGain: 1,
                     soundCardId: null,
                     ...initialDevice,
                     _id: undefined,
                     userId: user._id,
                     online: true,
                     lastLoginAt: new Date(),
-                } as any)
+                    createdAt: new Date(),
+                    apiServer: '', // TODO
+                })
                 .then((result) => result.ops[0])
         }
     }

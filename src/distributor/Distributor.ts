@@ -3,8 +3,8 @@ import { ITeckosProvider, ITeckosSocket } from 'teckos'
 import * as EventEmitter from 'events'
 import {
     Router,
-    RemoteAudioTrack,
-    RemoteVideoTrack,
+    AudioTrack,
+    VideoTrack,
     Stage,
     StageMember,
     SoundCard,
@@ -13,7 +13,7 @@ import {
     CustomGroupVolume,
     CustomGroupPosition,
     CustomStageMemberVolume,
-    CustomRemoteAudioTrackPosition,
+    CustomAudioTrackPosition,
     ServerDeviceEvents,
     User,
     CustomStageMemberPosition,
@@ -21,9 +21,7 @@ import {
     ServerRouterEvents,
     ServerRouterPayloads,
     StageDevice,
-    LocalVideoTrack,
-    LocalAudioTrack,
-    CustomRemoteAudioTrackVolume,
+    CustomAudioTrackVolume,
     CustomStageDevicePosition,
     CustomStageDeviceVolume,
     StagePackage,
@@ -31,7 +29,6 @@ import {
     InitialStagePackage,
     DefaultThreeDimensionalProperties,
     DefaultVolumeProperties,
-    InitialDevice,
 } from '@digitalstage/api-types'
 import { DEBUG_EVENTS, DEBUG_PAYLOAD } from '../env'
 import useLogger from '../useLogger'
@@ -47,8 +44,6 @@ export enum Collections {
     SOUND_CARDS = 'sc',
     STAGES = 's',
     GROUPS = 'g',
-    LOCAL_AUDIO_TRACKS = 'la',
-    LOCAL_VIDEO_TRACKS = 'lv',
     CUSTOM_GROUP_POSITIONS = 'c_g_p',
     CUSTOM_GROUP_VOLUMES = 'c_g_v',
     STAGE_MEMBERS = 'sm',
@@ -57,10 +52,10 @@ export enum Collections {
     STAGE_DEVICES = 'sd',
     CUSTOM_STAGE_DEVICE_POSITIONS = 'c_sd_p',
     CUSTOM_STAGE_DEVICE_VOLUMES = 'c_sd_v',
-    REMOTE_VIDEO_TRACKS = 'v',
-    REMOTE_AUDIO_TRACKS = 'a',
-    CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS = 'c_r_ap_p',
-    CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES = 'c_r_ap_v',
+    VIDEO_TRACKS = 'v',
+    AUDIO_TRACKS = 'a',
+    CUSTOM_AUDIO_TRACK_POSITIONS = 'c_r_ap_p',
+    CUSTOM_AUDIO_TRACK_VOLUMES = 'c_r_ap_v',
 }
 
 ObjectId.cacheHexString = true
@@ -88,12 +83,6 @@ class Distributor extends EventEmitter.EventEmitter {
     public prepareStore = (): Promise<any> =>
         Promise.all([
             this._db.collection<Router>(Collections.ROUTERS).createIndex({ server: 1 }),
-            this._db
-                .collection<RemoteAudioTrack>(Collections.REMOTE_AUDIO_TRACKS)
-                .createIndex({ localAudioTrackId: 1 }),
-            this._db
-                .collection<RemoteVideoTrack>(Collections.REMOTE_VIDEO_TRACKS)
-                .createIndex({ localAudioTrackId: 1 }),
             this._db.collection<Stage>(Collections.STAGES).createIndex({ admins: 1 }),
             this._db.collection<StageMember>(Collections.STAGE_MEMBERS).createIndex({ userId: 1 }),
             this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ userId: 1 }),
@@ -101,10 +90,10 @@ class Distributor extends EventEmitter.EventEmitter {
             this._db.collection<Device>(Collections.DEVICES).createIndex({ server: 1 }),
             this._db.collection<StageMember>(Collections.STAGE_MEMBERS).createIndex({ stageId: 1 }),
             this._db
-                .collection<RemoteAudioTrack>(Collections.REMOTE_AUDIO_TRACKS)
+                .collection<AudioTrack>(Collections.AUDIO_TRACKS)
                 .createIndex({ stageMemberId: 1 }),
             this._db
-                .collection<RemoteVideoTrack>(Collections.REMOTE_VIDEO_TRACKS)
+                .collection<VideoTrack>(Collections.VIDEO_TRACKS)
                 .createIndex({ stageMemberId: 1 }),
             this._db.collection<Group>(Collections.GROUPS).createIndex({ stageId: 1 }),
             this._db.collection<Stage>(Collections.STAGES).createIndex({ ovServer: 1 }),
@@ -121,21 +110,13 @@ class Distributor extends EventEmitter.EventEmitter {
             this._db
                 .collection<CustomStageMemberPosition>(Collections.CUSTOM_STAGE_MEMBER_POSITIONS)
                 .createIndex({ userId: 1, stageMemberId: 1 }),
+            this._db.collection<VideoTrack>(Collections.VIDEO_TRACKS).createIndex({ stageId: 1 }),
+            this._db.collection<AudioTrack>(Collections.AUDIO_TRACKS).createIndex({ stageId: 1 }),
             this._db
-                .collection<RemoteVideoTrack>(Collections.REMOTE_VIDEO_TRACKS)
-                .createIndex({ stageId: 1 }),
-            this._db
-                .collection<RemoteAudioTrack>(Collections.REMOTE_AUDIO_TRACKS)
-                .createIndex({ stageId: 1 }),
-            this._db
-                .collection<CustomRemoteAudioTrackVolume>(
-                    Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
-                )
+                .collection<CustomAudioTrackVolume>(Collections.CUSTOM_AUDIO_TRACK_VOLUMES)
                 .createIndex({ userId: 1, ObjectId: 1 }),
             this._db
-                .collection<CustomRemoteAudioTrackPosition>(
-                    Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
-                )
+                .collection<CustomAudioTrackPosition>(Collections.CUSTOM_AUDIO_TRACK_POSITIONS)
                 .createIndex({ userId: 1, ObjectId: 1 }),
             this._db.collection<Group>(Collections.GROUPS).createIndex({ stageId: 1 }),
             this._db.collection<StageMember>(Collections.STAGE_MEMBERS).createIndex({ groupId: 1 }),
@@ -153,12 +134,6 @@ class Distributor extends EventEmitter.EventEmitter {
                 .createIndex({ stageMemberId: 1 }),
             this._db
                 .collection<CustomStageMemberPosition>(Collections.CUSTOM_STAGE_MEMBER_POSITIONS)
-                .createIndex({ stageMemberId: 1 }),
-            this._db
-                .collection<RemoteVideoTrack>(Collections.REMOTE_VIDEO_TRACKS)
-                .createIndex({ stageMemberId: 1 }),
-            this._db
-                .collection<RemoteAudioTrack>(Collections.REMOTE_AUDIO_TRACKS)
                 .createIndex({ stageMemberId: 1 }),
             this._db.collection<StageMember>(Collections.STAGE_MEMBERS).createIndex({ userId: 1 }),
             this._db.collection<Group>(Collections.GROUPS).createIndex({ stageId: 1 }),
@@ -272,9 +247,6 @@ class Distributor extends EventEmitter.EventEmitter {
         this._db.collection<Router<ObjectId>>(Collections.ROUTERS).findOne({
             _id: id,
         })
-
-    readRouters = (): Promise<Router<ObjectId>[]> =>
-        this._db.collection<Router<ObjectId>>(Collections.ROUTERS).find().toArray()
 
     readNearestRouter = (
         type: string,
@@ -525,7 +497,24 @@ class Distributor extends EventEmitter.EventEmitter {
         this._db
             .collection<Device<ObjectId>>(Collections.DEVICES)
             .insertOne({
-                ...InitialDevice,
+                uuid: null,
+                type: 'unknown',
+                requestSession: false,
+                canAudio: false,
+                canVideo: false,
+                receiveAudio: false,
+                receiveVideo: false,
+                sendAudio: false,
+                sendVideo: false,
+                ovRawMode: false,
+                ovRenderISM: false,
+                ovP2p: true,
+                ovReceiverType: 'ortf',
+                ovRenderReverb: true,
+                ovReverbGain: 0.4,
+                canOv: false,
+                volume: 1,
+                egoGain: 1,
                 soundCardId: null,
                 ...init,
                 _id: undefined,
@@ -585,9 +574,6 @@ class Distributor extends EventEmitter.EventEmitter {
                 this.sendToUser(init.userId, ServerDeviceEvents.DeviceAdded, device)
                 return this.renewOnlineStatus(init.userId).then(() => device)
             })
-
-    readDevice = (id: ObjectId): Promise<Device<ObjectId>> =>
-        this._db.collection<Device<ObjectId>>(Collections.DEVICES).findOne({ _id: id })
 
     readDevicesByUser = (userId: ObjectId): Promise<Device<ObjectId>[]> =>
         this._db.collection<Device<ObjectId>>(Collections.DEVICES).find({ userId }).toArray()
@@ -681,7 +667,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                             ),
                         this._db
-                            .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
+                            .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
                             .find(
                                 {
                                     deviceId: id,
@@ -689,16 +675,13 @@ class Distributor extends EventEmitter.EventEmitter {
                                 { projection: { _id: 1, userId: 1 } }
                             )
                             .toArray()
-                            .then((localAudioTracks) =>
-                                localAudioTracks.map((localAudioTrack) =>
-                                    this.deleteLocalAudioTrack(
-                                        localAudioTrack.userId,
-                                        localAudioTrack._id
-                                    )
+                            .then((audioTracks) =>
+                                audioTracks.map((audioTrack) =>
+                                    this.deleteAudioTrack(audioTrack._id)
                                 )
                             ),
                         this._db
-                            .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
+                            .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
                             .find(
                                 {
                                     deviceId: id,
@@ -706,12 +689,9 @@ class Distributor extends EventEmitter.EventEmitter {
                                 { projection: { _id: 1, userId: 1 } }
                             )
                             .toArray()
-                            .then((localVideoTracks) =>
-                                localVideoTracks.map((localVideoTrack) =>
-                                    this.deleteLocalVideoTrack(
-                                        localVideoTrack.userId,
-                                        localVideoTrack._id
-                                    )
+                            .then((videoTracks) =>
+                                videoTracks.map((videoTrack) =>
+                                    this.deleteVideoTrack(videoTrack._id)
                                 )
                             ),
                         this._db
@@ -735,13 +715,13 @@ class Distributor extends EventEmitter.EventEmitter {
                             )
                             .deleteMany({ deviceId: id }),
                         this._db
-                            .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
-                                Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
+                            .collection<CustomAudioTrackVolume<ObjectId>>(
+                                Collections.CUSTOM_AUDIO_TRACK_VOLUMES
                             )
                             .deleteMany({ deviceId: id }),
                         this._db
-                            .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
-                                Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
+                            .collection<CustomAudioTrackPosition<ObjectId>>(
+                                Collections.CUSTOM_AUDIO_TRACK_POSITIONS
                             )
                             .deleteMany({ deviceId: id }),
                         this._db
@@ -785,10 +765,8 @@ class Distributor extends EventEmitter.EventEmitter {
                     return this._db
                         .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
                         .insertOne({
-                            userId,
                             sampleRate: 48000,
                             sampleRates: [48000],
-                            uuid,
                             label: uuid,
                             isDefault: false,
                             online: false,
@@ -800,6 +778,9 @@ class Distributor extends EventEmitter.EventEmitter {
                             numPeriods: 2,
                             softwareLatency: null,
                             ...update,
+                            userId,
+                            deviceId,
+                            uuid,
                         })
                         .then((insertResult) => insertResult.ops[0] as SoundCard<ObjectId>)
                         .then((soundCard) => {
@@ -813,7 +794,7 @@ class Distributor extends EventEmitter.EventEmitter {
 
     updateSoundCard(
         id: ObjectId,
-        update: Partial<Omit<SoundCard<ObjectId>, '_id' | 'userId'>>
+        update: Partial<Omit<SoundCard<ObjectId>, '_id' | 'userId' | 'deviceId'>>
     ): Promise<ObjectId> {
         return this._db
             .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
@@ -838,9 +819,6 @@ class Distributor extends EventEmitter.EventEmitter {
                 throw new Error(`Could not find or update sound card ${id}`)
             })
     }
-
-    readSoundCard = (id: ObjectId): Promise<SoundCard<ObjectId>> =>
-        this._db.collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS).findOne({ _id: id })
 
     deleteSoundCard = (userId: ObjectId, id: ObjectId): Promise<any> =>
         this._db
@@ -1360,48 +1338,11 @@ class Distributor extends EventEmitter.EventEmitter {
             .then(
                 async (stageDevice): Promise<StageDevice<ObjectId>> => {
                     this.emit(ServerDeviceEvents.StageDeviceAdded, stageDevice)
-                    if (stageDevice.active) {
-                        const localAudioTracks = await this._db
-                            .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
-                            .find({ deviceId: stageDevice.deviceId })
-                            .toArray()
-                        const localVideoTracks = await this._db
-                            .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
-                            .find({ deviceId: stageDevice.deviceId })
-                            .toArray()
-                        await Promise.all([
-                            localAudioTracks.forEach((localAudioTrack) =>
-                                this.createRemoteAudioTrack({
-                                    ...localAudioTrack,
-                                    userId: stageDevice.userId,
-                                    deviceId: stageDevice.deviceId,
-                                    stageId: stageDevice.stageId,
-                                    groupId: stageDevice.groupId,
-                                    stageMemberId: stageDevice.stageMemberId,
-                                    stageDeviceId: stageDevice._id,
-                                    localAudioTrackId: localAudioTrack._id,
-                                })
-                            ),
-                            localVideoTracks.forEach((localVideoTrack) =>
-                                this.createRemoteVideoTrack({
-                                    ...localVideoTrack,
-                                    userId: stageDevice.userId,
-                                    deviceId: stageDevice.deviceId,
-                                    stageId: stageDevice.stageId,
-                                    groupId: stageDevice.groupId,
-                                    stageMemberId: stageDevice.stageMemberId,
-                                    stageDeviceId: stageDevice._id,
-                                    localVideoTrackId: localVideoTrack._id,
-                                    online: stageDevice.active,
-                                })
-                            ),
-                            this.sendToJoinedStageMembers(
-                                stageDevice.stageId,
-                                ServerDeviceEvents.StageDeviceAdded,
-                                stageDevice
-                            ),
-                        ])
-                    }
+                    await this.sendToJoinedStageMembers(
+                        stageDevice.stageId,
+                        ServerDeviceEvents.StageDeviceAdded,
+                        stageDevice
+                    )
                     return stageDevice
                 }
             )
@@ -1430,69 +1371,6 @@ class Distributor extends EventEmitter.EventEmitter {
                         _id: id,
                     }
                     this.emit(ServerDeviceEvents.StageDeviceChanged, payload)
-                    if (update.active !== undefined) {
-                        if (!update.active) {
-                            // Remove all remote video and audio tracks
-                            const remoteAudioTracks = await this._db
-                                .collection<RemoteAudioTrack<ObjectId>>(
-                                    Collections.REMOTE_AUDIO_TRACKS
-                                )
-                                .find({ stageDeviceId: id }, { projection: { _id: 1 } })
-                                .toArray()
-                            const remoteVideoTracks = await this._db
-                                .collection<RemoteVideoTrack<ObjectId>>(
-                                    Collections.REMOTE_AUDIO_TRACKS
-                                )
-                                .find({ stageDeviceId: id }, { projection: { _id: 1 } })
-                                .toArray()
-                            await Promise.all([
-                                remoteAudioTracks.map((remoteAudioTrack) =>
-                                    this.deleteRemoteAudioTrack(remoteAudioTrack._id)
-                                ),
-                                remoteVideoTracks.map((remoteVideoTrack) =>
-                                    this.deleteRemoteVideoTrack(remoteVideoTrack._id)
-                                ),
-                            ])
-                        }
-                        await Promise.all([
-                            this._db
-                                .collection<RemoteAudioTrack<ObjectId>>(
-                                    Collections.REMOTE_AUDIO_TRACKS
-                                )
-                                .find(
-                                    {
-                                        stageDeviceId: id,
-                                    },
-                                    { projection: { _id: 1 } }
-                                )
-                                .toArray()
-                                .then((remoteAudioTracks) =>
-                                    remoteAudioTracks.map((remoteAudioTrack) =>
-                                        this.updateRemoteAudioTrack(remoteAudioTrack._id, {
-                                            online: update.active,
-                                        })
-                                    )
-                                ),
-                            this._db
-                                .collection<RemoteVideoTrack<ObjectId>>(
-                                    Collections.REMOTE_VIDEO_TRACKS
-                                )
-                                .find(
-                                    {
-                                        stageDeviceId: id,
-                                    },
-                                    { projection: { _id: 1 } }
-                                )
-                                .toArray()
-                                .then((remoteAudioTracks) =>
-                                    remoteAudioTracks.map((remoteAudioTrack) =>
-                                        this.updateRemoteAudioTrack(remoteAudioTrack._id, {
-                                            online: update.active,
-                                        })
-                                    )
-                                ),
-                        ])
-                    }
                     return this.sendToJoinedStageMembers(
                         result.value.stageId,
                         ServerDeviceEvents.StageDeviceChanged,
@@ -1538,21 +1416,19 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                             ),
                         this._db
-                            .collection<RemoteVideoTrack<ObjectId>>(Collections.REMOTE_VIDEO_TRACKS)
+                            .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
                             .find({ stageDeviceId: id }, { projection: { _id: 1 } })
                             .toArray()
                             .then((producers) =>
-                                producers.map((producer) =>
-                                    this.deleteRemoteVideoTrack(producer._id)
-                                )
+                                producers.map((producer) => this.deleteVideoTrack(producer._id))
                             ),
                         this._db
-                            .collection<RemoteAudioTrack<ObjectId>>(Collections.REMOTE_AUDIO_TRACKS)
+                            .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
                             .find({ stageDeviceId: id }, { projection: { _id: 1 } })
                             .toArray()
                             .then((remoteAudioTracks) =>
                                 remoteAudioTracks.map((remoteAudioTrack) =>
-                                    this.deleteRemoteAudioTrack(remoteAudioTrack._id)
+                                    this.deleteAudioTrack(remoteAudioTrack._id)
                                 )
                             ),
                         this.sendToJoinedStageMembers(
@@ -1565,291 +1441,10 @@ class Distributor extends EventEmitter.EventEmitter {
                 throw new Error(`Could not find or delete stage device ${id}`)
             })
 
-    /* LOCAL VIDEO TRACK */
-    createLocalVideoTrack = (
-        initial: Omit<LocalVideoTrack<ObjectId>, '_id'>
-    ): Promise<LocalVideoTrack<ObjectId>> =>
-        this._db
-            .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
-            .insertOne({
-                type: '',
-                ...initial,
-                userId: initial.userId,
-                deviceId: initial.deviceId,
-                _id: undefined,
-            })
-            .then((result) => result.ops[0])
-            .then((localVideoTrack: LocalVideoTrack<ObjectId>) => {
-                this.emit(ServerDeviceEvents.LocalVideoTrackAdded, localVideoTrack)
-                this.sendToUser(
-                    initial.userId,
-                    ServerDeviceEvents.LocalVideoTrackAdded,
-                    localVideoTrack
-                )
-                // Publish local video track?
-                return this.readUser(initial.userId)
-                    .then((user) => {
-                        if (user) {
-                            if (user.stageId) {
-                                return this._db
-                                    .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
-                                    .findOne({ deviceId: initial.deviceId, stageId: user.stageId })
-                                    .then((stageDevice) =>
-                                        this.createRemoteVideoTrack({
-                                            ...localVideoTrack,
-                                            _id: undefined,
-                                            userId: user._id,
-                                            deviceId: stageDevice.deviceId,
-                                            stageId: user.stageId,
-                                            stageDeviceId: stageDevice._id,
-                                            stageMemberId: user.stageMemberId,
-                                            localVideoTrackId: localVideoTrack._id,
-                                        })
-                                    )
-                            }
-                            return null
-                        }
-                        throw new Error(`Could not find the user ${initial.userId}`)
-                    })
-                    .then(() => localVideoTrack)
-            })
-
-    readLocalVideoTrackIdsByDevice = (deviceId: ObjectId): Promise<ObjectId[]> => {
+    /* AUDIO TRACK */
+    createAudioTrack(initial: Omit<AudioTrack<ObjectId>, '_id'>): Promise<AudioTrack<ObjectId>> {
         return this._db
-            .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
-            .find({ deviceId }, { projection: { _id: 1 } })
-            .toArray()
-            .then((tracks) => tracks.map((track) => track._id))
-    }
-
-    updateLocalVideoTrack = (
-        userId: ObjectId,
-        id: ObjectId,
-        update: Partial<Omit<LocalVideoTrack<ObjectId>, '_id'>>
-    ): Promise<void> => {
-        // Broadcast before validation (safe, since only user is affected here)
-        const payload = {
-            ...update,
-            _id: id,
-        }
-        this.sendToUser(userId, ServerDeviceEvents.LocalVideoTrackChanged, payload)
-        return this._db
-            .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
-            .updateOne(
-                {
-                    _id: id,
-                    userId,
-                },
-                {
-                    $set: update,
-                }
-            )
-            .then((result) => {
-                if (result.modifiedCount > 0) {
-                    this.emit(ServerDeviceEvents.LocalVideoTrackChanged, payload)
-                    // Also update remote video producer
-                    return this._db
-                        .collection<RemoteVideoTrack<ObjectId>>(Collections.REMOTE_VIDEO_TRACKS)
-                        .findOneAndUpdate(
-                            { ObjectId: id },
-                            { $set: update },
-                            { projection: { _id: 1, stageId: 1 } }
-                        )
-                        .then((result2) => {
-                            if (result2) {
-                                return this.sendToJoinedStageMembers(
-                                    result2.value.stageId,
-                                    ServerDeviceEvents.RemoteVideoTrackChanged,
-                                    {
-                                        ...update,
-                                        _id: result2.value._id,
-                                    }
-                                )
-                            }
-                            throw new Error(
-                                `Could not find and update remote video track ${result2.value._id}`
-                            )
-                        })
-                }
-                throw new Error(`Could not find and update local video track ${id}`)
-            })
-    }
-
-    deleteLocalVideoTrack = (userId: ObjectId, id: ObjectId): Promise<any> => {
-        // Broadcast before validation (safe, since only user is affected here)
-        this.sendToUser(userId, ServerDeviceEvents.LocalVideoTrackRemoved, id)
-        return this._db
-            .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
-            .deleteOne({
-                userId,
-                _id: id,
-            })
-            .then((result) => {
-                if (result.deletedCount > 0) {
-                    this.emit(ServerDeviceEvents.LocalVideoTrackRemoved, id)
-                    // Also delete all published producers
-                    return this._db
-                        .collection<RemoteVideoTrack<ObjectId>>(Collections.REMOTE_VIDEO_TRACKS)
-                        .findOne(
-                            {
-                                localVideoTrackId: id,
-                            },
-                            { projection: { _id: 1 } }
-                        )
-                        .then((remoteVideoTrack) => {
-                            if (remoteVideoTrack) {
-                                return this.deleteRemoteVideoTrack(remoteVideoTrack._id)
-                            }
-                            throw new Error(
-                                `Could not find and delete remote video track ${remoteVideoTrack._id}`
-                            )
-                        })
-                }
-                throw new Error(`Could not find and delete local video track ${id}`)
-            })
-    }
-
-    /* LOCAL AUDIO TRACK */
-    createLocalAudioTrack = (
-        initial: Omit<LocalAudioTrack<ObjectId>, '_id'>
-    ): Promise<LocalAudioTrack<ObjectId>> =>
-        this._db
-            .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
-            .insertOne({ ...initial, _id: undefined })
-            .then((result) => result.ops[0])
-            .then((localAudioTrack: LocalAudioTrack<ObjectId>) => {
-                this.emit(ServerDeviceEvents.LocalAudioTrackAdded, localAudioTrack)
-                this.sendToUser(
-                    initial.userId,
-                    ServerDeviceEvents.LocalAudioTrackAdded,
-                    localAudioTrack
-                )
-                // Publish local audio track?
-                return this.readUser(initial.userId)
-                    .then((user) => {
-                        if (user) {
-                            if (user.stageId) {
-                                return this._db
-                                    .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
-                                    .findOne({ deviceId: initial.deviceId, stageId: user.stageId })
-                                    .then((stageDevice) =>
-                                        this.createRemoteAudioTrack({
-                                            ...localAudioTrack,
-                                            _id: undefined,
-                                            userId: user._id,
-                                            deviceId: stageDevice.deviceId,
-                                            stageId: user.stageId,
-                                            stageDeviceId: stageDevice._id,
-                                            stageMemberId: user.stageMemberId,
-                                            localAudioTrackId: localAudioTrack._id,
-                                        })
-                                    )
-                            }
-                            throw new Error('User is not inside a stage')
-                        }
-                        throw new Error(`Could not find the user ${initial.userId}`)
-                    })
-                    .then(() => localAudioTrack)
-            })
-
-    readLocalAudioTrackIdsByDevice = (deviceId: ObjectId): Promise<ObjectId[]> => {
-        return this._db
-            .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
-            .find({ deviceId }, { projection: { _id: 1 } })
-            .toArray()
-            .then((tracks) => tracks.map((track) => track._id))
-    }
-
-    updateLocalAudioTrack = (
-        userId: ObjectId,
-        id: ObjectId,
-        update: Partial<Omit<LocalAudioTrack<ObjectId>, '_id' | 'userId' | 'deviceId'>>
-    ): Promise<void> => {
-        // Broadcast before validation (safe, since only user is affected here)
-        const payload = {
-            ...update,
-            _id: id,
-        }
-        this.sendToUser(userId, ServerDeviceEvents.LocalAudioTrackChanged, payload)
-        return this._db
-            .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
-            .updateOne(
-                {
-                    _id: id,
-                    userId,
-                },
-                {
-                    $set: update,
-                }
-            )
-            .then((result) => {
-                if (result.modifiedCount > 0) {
-                    this.emit(ServerDeviceEvents.LocalAudioTrackChanged, payload)
-                    // Also update remote audio producer
-                    return this._db
-                        .collection<RemoteAudioTrack<ObjectId>>(Collections.REMOTE_AUDIO_TRACKS)
-                        .findOneAndUpdate(
-                            { localAudioTrackId: id },
-                            { $set: update },
-                            { projection: { _id: 1, stageId: 1 } }
-                        )
-                        .then((result2) => {
-                            if (result2 && result2.ok) {
-                                return this.sendToJoinedStageMembers(
-                                    result2.value.stageId,
-                                    ServerDeviceEvents.RemoteAudioTrackChanged,
-                                    {
-                                        ...update,
-                                        _id: result2.value._id,
-                                    }
-                                )
-                            }
-                            throw new Error(`Could not find and update the local audio track ${id}`)
-                        })
-                }
-                throw new Error(`Could not find and update local audio track ${id}`)
-            })
-    }
-
-    deleteLocalAudioTrack = (userId: ObjectId, id: ObjectId): Promise<any> => {
-        // Broadcast before validation (safe, since only user is affected here)
-        this.sendToUser(userId, ServerDeviceEvents.LocalAudioTrackRemoved, id)
-        return this._db
-            .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
-            .deleteOne({
-                userId,
-                _id: id,
-            })
-            .then((result) => {
-                if (result.deletedCount > 0) {
-                    this.emit(ServerDeviceEvents.LocalAudioTrackRemoved, id)
-                    // Also delete all published producers
-                    return this._db
-                        .collection<RemoteAudioTrack<ObjectId>>(Collections.REMOTE_AUDIO_TRACKS)
-                        .findOne(
-                            {
-                                localAudioTrackId: id,
-                            },
-                            { projection: { _id: 1 } }
-                        )
-                        .then((remoteAudioTrack) => {
-                            if (remoteAudioTrack)
-                                return this.deleteRemoteAudioTrack(remoteAudioTrack._id)
-                            throw new Error(
-                                `Could not find and delete remote audio track ${remoteAudioTrack._id}`
-                            )
-                        })
-                }
-                throw new Error(`Could not find and delete local audio track ${id}`)
-            })
-    }
-
-    /* REMOTE AUDIO TRACK */
-    private createRemoteAudioTrack(
-        initial: Omit<RemoteAudioTrack<ObjectId>, '_id'>
-    ): Promise<RemoteAudioTrack<ObjectId>> {
-        return this._db
-            .collection<RemoteAudioTrack<ObjectId>>(Collections.REMOTE_AUDIO_TRACKS)
+            .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
             .insertOne({
                 ...DefaultVolumeProperties,
                 ...DefaultThreeDimensionalProperties,
@@ -1865,30 +1460,36 @@ class Distributor extends EventEmitter.EventEmitter {
             })
             .then((result) => result.ops[0])
             .then((remoteAudioTrack) => {
-                this.emit(ServerDeviceEvents.RemoteAudioTrackAdded, remoteAudioTrack)
+                this.emit(ServerDeviceEvents.AudioTrackAdded, remoteAudioTrack)
                 return this.sendToJoinedStageMembers(
                     initial.stageId,
-                    ServerDeviceEvents.RemoteAudioTrackAdded,
-                    remoteAudioTrack // as DevicePayloads.RemoteAudioTrackAdded
+                    ServerDeviceEvents.AudioTrackAdded,
+                    remoteAudioTrack // as DevicePayloads.AudioTrackAdded
                 ).then(() => remoteAudioTrack)
             })
     }
 
-    readRemoteAudioTrack(id: ObjectId): Promise<RemoteAudioTrack<ObjectId>> {
-        return this._db
-            .collection<RemoteAudioTrack<ObjectId>>(Collections.REMOTE_AUDIO_TRACKS)
-            .findOne({
-                _id: id,
-            })
+    readAudioTrack(id: ObjectId): Promise<AudioTrack<ObjectId>> {
+        return this._db.collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS).findOne({
+            _id: id,
+        })
     }
 
-    updateRemoteAudioTrack(
+    readAudioTrackIdsByDevice = (deviceId: ObjectId): Promise<ObjectId[]> => {
+        return this._db
+            .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
+            .find({ deviceId }, { projection: { _id: 1 } })
+            .toArray()
+            .then((tracks) => tracks.map((track) => track._id))
+    }
+
+    updateAudioTrack(
         id: ObjectId,
-        update: Partial<Omit<RemoteAudioTrack<ObjectId>, '_id'>>
+        update: Partial<Omit<AudioTrack<ObjectId>, '_id'>>
     ): Promise<void> {
         const { _id, localAudioTrackId, userId, ...secureUpdate } = update as any
         return this._db
-            .collection<RemoteAudioTrack<ObjectId>>(Collections.REMOTE_AUDIO_TRACKS)
+            .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
             .findOneAndUpdate(
                 {
                     _id: id,
@@ -1904,10 +1505,10 @@ class Distributor extends EventEmitter.EventEmitter {
                         ...secureUpdate,
                         _id: id,
                     }
-                    this.emit(ServerDeviceEvents.RemoteAudioTrackChanged, payload)
+                    this.emit(ServerDeviceEvents.AudioTrackChanged, payload)
                     await this.sendToJoinedStageMembers(
                         result.value.stageId,
-                        ServerDeviceEvents.RemoteAudioTrackChanged,
+                        ServerDeviceEvents.AudioTrackChanged,
                         payload
                     )
                 }
@@ -1915,9 +1516,9 @@ class Distributor extends EventEmitter.EventEmitter {
             })
     }
 
-    private deleteRemoteAudioTrack(id: ObjectId): Promise<any> {
+    deleteAudioTrack(id: ObjectId): Promise<any> {
         return this._db
-            .collection<RemoteAudioTrack<ObjectId>>(Collections.REMOTE_AUDIO_TRACKS)
+            .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
             .findOneAndDelete(
                 {
                     _id: id,
@@ -1926,74 +1527,80 @@ class Distributor extends EventEmitter.EventEmitter {
             )
             .then((result) => {
                 if (result.value) {
-                    this.emit(ServerDeviceEvents.RemoteAudioTrackRemoved, id)
+                    this.emit(ServerDeviceEvents.AudioTrackRemoved, id)
                     return Promise.all([
                         this.sendToJoinedStageMembers(
                             result.value.stageId,
-                            ServerDeviceEvents.RemoteAudioTrackRemoved,
+                            ServerDeviceEvents.AudioTrackRemoved,
                             id
                         ),
                         this._db
-                            .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
-                                Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
+                            .collection<CustomAudioTrackPosition<ObjectId>>(
+                                Collections.CUSTOM_AUDIO_TRACK_POSITIONS
                             )
-                            .find({ remoteAudioTrackId: id }, { projection: { _id: true } })
+                            .find({ audioTrackId: id }, { projection: { _id: true } })
                             .toArray()
                             .then((customizedItems) =>
                                 customizedItems.map((customizedItem) =>
-                                    this.deleteCustomRemoteAudioTrackPosition(customizedItem._id)
+                                    this.deleteCustomAudioTrackPosition(customizedItem._id)
                                 )
                             ),
                         this._db
-                            .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
-                                Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
+                            .collection<CustomAudioTrackVolume<ObjectId>>(
+                                Collections.CUSTOM_AUDIO_TRACK_VOLUMES
                             )
-                            .find({ remoteAudioTrackId: id }, { projection: { _id: true } })
+                            .find({ audioTrackId: id }, { projection: { _id: true } })
                             .toArray()
                             .then((customizedItems) =>
                                 customizedItems.map((customizedItem) =>
-                                    this.deleteCustomRemoteAudioTrackVolume(customizedItem._id)
+                                    this.deleteCustomAudioTrackVolume(customizedItem._id)
                                 )
                             ),
                     ])
                 }
-                throw new Error(`Could not find and delete remote audio track ${id}`)
+                throw new Error(`Could not find and delete audio track ${id}`)
             })
     }
 
-    /* REMOTE VIDEO TRACK */
-    private createRemoteVideoTrack(
-        initialTrack: Omit<RemoteVideoTrack<ObjectId>, '_id'>
-    ): Promise<RemoteVideoTrack<ObjectId>> {
+    /* VIDEO TRACK */
+    createVideoTrack(
+        initialTrack: Omit<VideoTrack<ObjectId>, '_id'>
+    ): Promise<VideoTrack<ObjectId>> {
         return this._db
-            .collection<RemoteVideoTrack<ObjectId>>(Collections.REMOTE_VIDEO_TRACKS)
+            .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
             .insertOne(initialTrack as any)
             .then((result) => result.ops[0])
             .then((producer) => {
-                this.emit(ServerDeviceEvents.RemoteVideoTrackAdded, producer)
+                this.emit(ServerDeviceEvents.VideoTrackAdded, producer)
                 return this.sendToJoinedStageMembers(
                     initialTrack.stageId,
-                    ServerDeviceEvents.RemoteVideoTrackAdded,
+                    ServerDeviceEvents.VideoTrackAdded,
                     producer
                 ).then(() => producer)
             })
     }
 
-    readRemoteVideoTrack(id: ObjectId): Promise<RemoteVideoTrack<ObjectId>> {
-        return this._db
-            .collection<RemoteVideoTrack<ObjectId>>(Collections.REMOTE_VIDEO_TRACKS)
-            .findOne({
-                _id: id,
-            })
+    readVideoTrack(id: ObjectId): Promise<VideoTrack<ObjectId>> {
+        return this._db.collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS).findOne({
+            _id: id,
+        })
     }
 
-    updateRemoteVideoTrack(
+    readVideoTrackIdsByDevice = (deviceId: ObjectId): Promise<ObjectId[]> => {
+        return this._db
+            .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
+            .find({ deviceId }, { projection: { _id: 1 } })
+            .toArray()
+            .then((tracks) => tracks.map((track) => track._id))
+    }
+
+    updateVideoTrack(
         id: ObjectId,
-        update: Partial<Omit<RemoteVideoTrack<ObjectId>, '_id'>>
+        update: Partial<Omit<VideoTrack<ObjectId>, '_id'>>
     ): Promise<void> {
         const { localVideoTrackId, userId, ...secureUpdate } = update
         return this._db
-            .collection<RemoteVideoTrack<ObjectId>>(Collections.REMOTE_VIDEO_TRACKS)
+            .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
             .findOneAndUpdate(
                 {
                     _id: id,
@@ -2009,10 +1616,10 @@ class Distributor extends EventEmitter.EventEmitter {
                         ...secureUpdate,
                         _id: id,
                     }
-                    this.emit(ServerDeviceEvents.RemoteVideoTrackChanged, payload)
+                    this.emit(ServerDeviceEvents.VideoTrackChanged, payload)
                     return this.sendToJoinedStageMembers(
                         result.value.stageId,
-                        ServerDeviceEvents.RemoteVideoTrackChanged,
+                        ServerDeviceEvents.VideoTrackChanged,
                         payload
                     )
                 }
@@ -2020,9 +1627,9 @@ class Distributor extends EventEmitter.EventEmitter {
             })
     }
 
-    private deleteRemoteVideoTrack(id: ObjectId): Promise<void> {
+    deleteVideoTrack(id: ObjectId): Promise<void> {
         return this._db
-            .collection<RemoteVideoTrack<ObjectId>>(Collections.REMOTE_VIDEO_TRACKS)
+            .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
             .findOneAndDelete(
                 {
                     _id: id,
@@ -2031,14 +1638,14 @@ class Distributor extends EventEmitter.EventEmitter {
             )
             .then((result) => {
                 if (result.value) {
-                    this.emit(ServerDeviceEvents.RemoteVideoTrackRemoved, id)
+                    this.emit(ServerDeviceEvents.VideoTrackRemoved, id)
                     return this.sendToJoinedStageMembers(
                         result.value.stageId,
-                        ServerDeviceEvents.RemoteVideoTrackRemoved,
+                        ServerDeviceEvents.VideoTrackRemoved,
                         id
                     )
                 }
-                throw new Error(`Could not find and delete remote video track ${id}`)
+                throw new Error(`Could not find and delete video track ${id}`)
             })
     }
 
@@ -2626,18 +2233,18 @@ class Distributor extends EventEmitter.EventEmitter {
                 throw new Error(`Could not find and delete custom stage device volume ${id}`)
             })
 
-    upsertCustomRemoteAudioTrackPosition = (
+    upsertCustomAudioTrackPosition = (
         userId: ObjectId,
-        remoteAudioTrackId: ObjectId,
+        audioTrackId: ObjectId,
         deviceId: ObjectId,
         update: Partial<ThreeDimensionalProperties>
     ): Promise<void> =>
         this._db
-            .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
-                Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
+            .collection<CustomAudioTrackPosition<ObjectId>>(
+                Collections.CUSTOM_AUDIO_TRACK_POSITIONS
             )
             .findOneAndUpdate(
-                { userId, remoteAudioTrackId, deviceId },
+                { userId, audioTrackId, deviceId },
                 {
                     $set: update,
                     $setOnInsert: {
@@ -2654,19 +2261,19 @@ class Distributor extends EventEmitter.EventEmitter {
                         ...update,
                         _id: result.value._id,
                     }
-                    this.emit(ServerDeviceEvents.CustomRemoteAudioTrackPositionChanged, payload)
+                    this.emit(ServerDeviceEvents.CustomAudioTrackPositionChanged, payload)
                     return this.sendToUser(
                         userId,
-                        ServerDeviceEvents.CustomRemoteAudioTrackPositionChanged,
+                        ServerDeviceEvents.CustomAudioTrackPositionChanged,
                         payload
                     )
                 }
                 if (result.ok) {
-                    return this.readRemoteAudioTrack(remoteAudioTrackId)
+                    return this.readAudioTrack(audioTrackId)
                         .then(
                             (
                                 remoteAudioTrack
-                            ): Omit<CustomRemoteAudioTrackPosition<ObjectId>, '_id'> => ({
+                            ): Omit<CustomAudioTrackPosition<ObjectId>, '_id'> => ({
                                 x: remoteAudioTrack.x,
                                 y: remoteAudioTrack.y,
                                 z: remoteAudioTrack.z,
@@ -2678,78 +2285,74 @@ class Distributor extends EventEmitter.EventEmitter {
                                 stageId: remoteAudioTrack.stageId,
                                 deviceId,
                                 userId,
-                                remoteAudioTrackId,
+                                audioTrackId,
                             })
                         )
                         .then((initial) =>
                             this._db
-                                .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
-                                    Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
+                                .collection<CustomAudioTrackPosition<ObjectId>>(
+                                    Collections.CUSTOM_AUDIO_TRACK_POSITIONS
                                 )
                                 .insertOne(initial)
                                 .then((response) => {
                                     if (response.result.ok) {
                                         const payload = response.ops[0]
                                         this.emit(
-                                            ServerDeviceEvents.CustomRemoteAudioTrackPositionAdded,
+                                            ServerDeviceEvents.CustomAudioTrackPositionAdded,
                                             payload
                                         )
                                         return this.sendToUser(
                                             userId,
-                                            ServerDeviceEvents.CustomRemoteAudioTrackPositionAdded,
+                                            ServerDeviceEvents.CustomAudioTrackPositionAdded,
                                             payload
                                         )
                                     }
                                     throw new Error(
-                                        `Could not create custom position of remote audio track ${remoteAudioTrackId} for user ${userId} and device ${deviceId}`
+                                        `Could not create custom position of remote audio track ${audioTrackId} for user ${userId} and device ${deviceId}`
                                     )
                                 })
                         )
                 }
                 throw new Error(
-                    `Could not customize position of remote audio track ${remoteAudioTrackId} for user ${userId} and device ${deviceId}`
+                    `Could not customize position of remote audio track ${audioTrackId} for user ${userId} and device ${deviceId}`
                 )
             })
 
-    readCustomRemoteAudioTrackPosition = (
-        id: ObjectId
-    ): Promise<CustomRemoteAudioTrackPosition<ObjectId>> =>
+    readCustomAudioTrackPosition = (id: ObjectId): Promise<CustomAudioTrackPosition<ObjectId>> =>
         this._db
-            .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
-                Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
+            .collection<CustomAudioTrackPosition<ObjectId>>(
+                Collections.CUSTOM_AUDIO_TRACK_POSITIONS
             )
             .findOne({ _id: id })
 
-    deleteCustomRemoteAudioTrackPosition = (id: ObjectId): Promise<void> =>
+    deleteCustomAudioTrackPosition = (id: ObjectId): Promise<void> =>
         this._db
-            .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
-                Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
+            .collection<CustomAudioTrackPosition<ObjectId>>(
+                Collections.CUSTOM_AUDIO_TRACK_POSITIONS
             )
             .findOneAndDelete({ _id: id }, { projection: { userId: 1 } })
             .then((result) => {
                 if (result.value) {
-                    this.emit(ServerDeviceEvents.CustomRemoteAudioTrackPositionRemoved, id)
+                    this.emit(ServerDeviceEvents.CustomAudioTrackPositionRemoved, id)
                     return this.sendToUser(
                         result.value.userId,
-                        ServerDeviceEvents.CustomRemoteAudioTrackPositionRemoved,
+                        ServerDeviceEvents.CustomAudioTrackPositionRemoved,
                         id
                     )
                 }
                 throw new Error(`Could not find and delete remote audio track position ${id}`)
             })
 
-    upsertCustomRemoteAudioTrackVolume = (
+    upsertCustomAudioTrackVolume = (
         userId: ObjectId,
-        remoteAudioTrackId: ObjectId,
+        audioTrackId: ObjectId,
         deviceId: ObjectId,
         update: { volume?: number; muted?: boolean }
     ): Promise<void> =>
         this._db
-            .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
-                Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
-            )
+            .collection<CustomAudioTrackVolume<ObjectId>>(Collections.CUSTOM_AUDIO_TRACK_VOLUMES)
             .findOneAndUpdate(
-                { userId, remoteAudioTrackId, deviceId },
+                { userId, audioTrackId, deviceId },
                 {
                     $set: update,
                     $setOnInsert: {
@@ -2766,80 +2369,72 @@ class Distributor extends EventEmitter.EventEmitter {
                     const payload = {
                         ...update,
                         _id: result.value._id as any,
-                    } as ServerDevicePayloads.CustomRemoteAudioTrackVolumeChanged
-                    this.emit(ServerDeviceEvents.CustomRemoteAudioTrackVolumeChanged, payload)
+                    } as ServerDevicePayloads.CustomAudioTrackVolumeChanged
+                    this.emit(ServerDeviceEvents.CustomAudioTrackVolumeChanged, payload)
                     return this.sendToUser(
                         userId,
-                        ServerDeviceEvents.CustomRemoteAudioTrackVolumeChanged,
+                        ServerDeviceEvents.CustomAudioTrackVolumeChanged,
                         payload
                     )
                 }
                 if (result.ok) {
-                    return this.readRemoteAudioTrack(remoteAudioTrackId)
+                    return this.readAudioTrack(audioTrackId)
                         .then(
-                            (
-                                remoteAudioTrack
-                            ): Omit<CustomRemoteAudioTrackVolume<ObjectId>, '_id'> => ({
+                            (remoteAudioTrack): Omit<CustomAudioTrackVolume<ObjectId>, '_id'> => ({
                                 volume: remoteAudioTrack.volume,
                                 muted: remoteAudioTrack.muted,
                                 ...update,
                                 userId,
                                 stageId: remoteAudioTrack.stageId,
-                                remoteAudioTrackId,
+                                audioTrackId,
                                 deviceId,
                             })
                         )
                         .then((initial) =>
                             this._db
-                                .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
-                                    Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
+                                .collection<CustomAudioTrackVolume<ObjectId>>(
+                                    Collections.CUSTOM_AUDIO_TRACK_VOLUMES
                                 )
                                 .insertOne(initial)
                                 .then((response) => {
                                     if (response.result.ok) {
                                         const payload = response.ops[0]
                                         this.emit(
-                                            ServerDeviceEvents.CustomRemoteAudioTrackVolumeAdded,
+                                            ServerDeviceEvents.CustomAudioTrackVolumeAdded,
                                             payload
                                         )
                                         return this.sendToUser(
                                             userId,
-                                            ServerDeviceEvents.CustomRemoteAudioTrackVolumeAdded,
+                                            ServerDeviceEvents.CustomAudioTrackVolumeAdded,
                                             payload
                                         )
                                     }
                                     throw new Error(
-                                        `Could not create custom volume of remote audio track ${remoteAudioTrackId} for user ${userId} and device ${deviceId}`
+                                        `Could not create custom volume of remote audio track ${audioTrackId} for user ${userId} and device ${deviceId}`
                                     )
                                 })
                         )
                 }
                 throw new Error(
-                    `Could not customize volume of remote audio track ${remoteAudioTrackId} for user ${userId} and device ${deviceId}`
+                    `Could not customize volume of remote audio track ${audioTrackId} for user ${userId} and device ${deviceId}`
                 )
             })
 
-    readCustomRemoteAudioTrackVolume = (
-        id: ObjectId
-    ): Promise<CustomRemoteAudioTrackVolume<ObjectId>> =>
+    readCustomAudioTrackVolume = (id: ObjectId): Promise<CustomAudioTrackVolume<ObjectId>> =>
         this._db
-            .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
-                Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
-            )
+            .collection<CustomAudioTrackVolume<ObjectId>>(Collections.CUSTOM_AUDIO_TRACK_VOLUMES)
             .findOne({ _id: id })
 
-    deleteCustomRemoteAudioTrackVolume = (id: ObjectId): Promise<void> =>
+    deleteCustomAudioTrackVolume = (id: ObjectId): Promise<void> =>
         this._db
-            .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
-                Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
-            )
+            .collection<CustomAudioTrackVolume<ObjectId>>(Collections.CUSTOM_AUDIO_TRACK_VOLUMES)
             .findOneAndDelete({ _id: id }, { projection: { userId: 1 } })
             .then((result) => {
                 if (result.value) {
-                    this.emit(ServerDeviceEvents.CustomRemoteAudioTrackVolumeRemoved, id)
+                    this.emit(ServerDeviceEvents.CustomAudioTrackVolumeRemoved, id)
                     return this.sendToUser(
                         result.value.userId,
-                        ServerDeviceEvents.CustomRemoteAudioTrackVolumeRemoved,
+                        ServerDeviceEvents.CustomAudioTrackVolumeRemoved,
                         id
                     )
                 }
@@ -2951,7 +2546,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .find({userId: })
       .toArray();
     for(const localVideoTrack of localVideoTracks) {
-      await this.createRemoteVideoTrack({
+      await this.createVideoTrack({
         ...localVideoTrack,
         _id: undefined,
         userId: user._id,
@@ -2967,7 +2562,7 @@ class Distributor extends EventEmitter.EventEmitter {
       .find({deviceId: result.value.deviceId})
       .toArray();
     for(const remoteAudioTrack of remoteAudioTracks) {
-      await this.createRemoteAudioTrack(remoteAudioTrack._id);
+      await this.createAudioTrack(remoteAudioTrack._id);
     } */
 
         trace(`joinStage: ${Date.now() - startTime}ms`)
@@ -3150,30 +2745,28 @@ class Distributor extends EventEmitter.EventEmitter {
                 stageId,
             })
             .toArray()
-        const remoteVideoTracks: RemoteVideoTrack<ObjectId>[] = await this._db
-            .collection<RemoteVideoTrack<ObjectId>>(Collections.REMOTE_VIDEO_TRACKS)
+        const videoTracks: VideoTrack<ObjectId>[] = await this._db
+            .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
             .find({
                 stageId,
             })
             .toArray()
-        const remoteAudioTracks: RemoteAudioTrack<ObjectId>[] = await this._db
-            .collection<RemoteAudioTrack<ObjectId>>(Collections.REMOTE_AUDIO_TRACKS)
+        const audioTracks: AudioTrack<ObjectId>[] = await this._db
+            .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
             .find({
                 stageId,
             })
             .toArray()
-        const customRemoteAudioTrackVolumes: CustomRemoteAudioTrackVolume<ObjectId>[] = await this._db
-            .collection<CustomRemoteAudioTrackVolume<ObjectId>>(
-                Collections.CUSTOM_REMOTE_AUDIO_TRACK_VOLUMES
-            )
+        const customAudioTrackVolumes: CustomAudioTrackVolume<ObjectId>[] = await this._db
+            .collection<CustomAudioTrackVolume<ObjectId>>(Collections.CUSTOM_AUDIO_TRACK_VOLUMES)
             .find({
                 userId,
                 stageId,
             })
             .toArray()
-        const customRemoteAudioTrackPositions: CustomRemoteAudioTrackPosition<ObjectId>[] = await this._db
-            .collection<CustomRemoteAudioTrackPosition<ObjectId>>(
-                Collections.CUSTOM_REMOTE_AUDIO_TRACK_POSITIONS
+        const customAudioTrackPositions: CustomAudioTrackPosition<ObjectId>[] = await this._db
+            .collection<CustomAudioTrackPosition<ObjectId>>(
+                Collections.CUSTOM_AUDIO_TRACK_POSITIONS
             )
             .find({
                 userId,
@@ -3192,10 +2785,10 @@ class Distributor extends EventEmitter.EventEmitter {
                 stageDevices,
                 customStageDeviceVolumes,
                 customStageDevicePositions,
-                remoteVideoTracks,
-                remoteAudioTracks,
-                customRemoteAudioTrackVolumes,
-                customRemoteAudioTrackPositions,
+                videoTracks,
+                audioTracks,
+                customAudioTrackVolumes,
+                customAudioTrackPositions,
             }
         }
         return {
@@ -3210,10 +2803,10 @@ class Distributor extends EventEmitter.EventEmitter {
             stageDevices,
             customStageDeviceVolumes,
             customStageDevicePositions,
-            remoteVideoTracks,
-            remoteAudioTracks,
-            customRemoteAudioTrackVolumes,
-            customRemoteAudioTrackPositions,
+            videoTracks,
+            audioTracks,
+            customAudioTrackVolumes,
+            customAudioTrackPositions,
         }
     }
 

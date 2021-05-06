@@ -4,12 +4,13 @@ import {
     User,
     Device,
     Group,
-    LocalVideoTrack,
     Stage,
     ClientDeviceEvents,
     ServerDeviceEvents,
     ClientDevicePayloads,
     ChatMessage,
+    VideoTrack,
+    AudioTrack,
 } from '@digitalstage/api-types'
 import useLogger from '../useLogger'
 import Distributor from '../distributor/Distributor'
@@ -47,24 +48,20 @@ const handleSocketClientConnection = async (
         }
 
         socket.on('disconnect', () => {
-            // TODO: Remove all local tracks associated with this device!
+            // TODO: Remove all tracks associated with this device!
             return Promise.all([
                 distributor
-                    .readLocalVideoTrackIdsByDevice(device._id)
+                    .readVideoTrackIdsByDevice(device._id)
                     .then((trackIds) =>
                         Promise.all(
-                            trackIds.map((trackId) =>
-                                distributor.deleteLocalVideoTrack(user._id, trackId)
-                            )
+                            trackIds.map((trackId) => distributor.deleteVideoTrack(trackId))
                         )
                     ),
                 distributor
-                    .readLocalAudioTrackIdsByDevice(device._id)
-                    .then((tracks) =>
+                    .readAudioTrackIdsByDevice(device._id)
+                    .then((trackIds) =>
                         Promise.all(
-                            tracks.map((track) =>
-                                distributor.deleteLocalAudioTrack(user._id, track)
-                            )
+                            trackIds.map((trackId) => distributor.deleteAudioTrack(trackId))
                         )
                     ),
             ])
@@ -97,20 +94,20 @@ const handleSocketClientConnection = async (
         // Send sound cards
         await distributor.sendDeviceConfigurationToDevice(socket, user)
 
-        /* LOCAL AUDIO TRACK */
+        /* AUDIO TRACK */
         socket.on(
-            ClientDeviceEvents.CreateLocalAudioTrack,
+            ClientDeviceEvents.CreateAudioTrack,
             (
-                payload: ClientDevicePayloads.CreateLocalAudioTrack,
-                fn?: (error: string | null, track?: LocalVideoTrack<ObjectId>) => void
+                payload: ClientDevicePayloads.CreateAudioTrack,
+                fn?: (error: string | null, track?: AudioTrack<ObjectId>) => void
             ) => {
                 trace(
-                    `${user.name}: ${ClientDeviceEvents.CreateLocalAudioTrack}(${JSON.stringify(
+                    `${user.name}: ${ClientDeviceEvents.CreateAudioTrack}(${JSON.stringify(
                         payload
                     )})`
                 )
                 return distributor
-                    .createLocalAudioTrack({
+                    .createAudioTrack({
                         type: '',
                         ...payload,
                         userId: user._id,
@@ -129,25 +126,38 @@ const handleSocketClientConnection = async (
             }
         )
         socket.on(
-            ClientDeviceEvents.ChangeLocalAudioTrack,
+            ClientDeviceEvents.ChangeAudioTrack,
             (
-                payload: ClientDevicePayloads.ChangeLocalAudioTrack,
+                payload: ClientDevicePayloads.ChangeAudioTrack,
                 fn?: (error: string | null) => void
             ) => {
                 trace(
-                    `${user.name}: ${ClientDeviceEvents.ChangeLocalAudioTrack}(${JSON.stringify(
+                    `${user.name}: ${ClientDeviceEvents.ChangeAudioTrack}(${JSON.stringify(
                         payload
                     )})`
                 )
                 const { _id, userId, deviceId, ...data } = payload
                 const id = new ObjectId(_id)
                 return distributor
-                    .updateLocalAudioTrack(user._id, id, data)
-                    .then(() => {
-                        if (fn) {
-                            return fn(null)
+                    .readAudioTrack(id)
+                    .then(async (audioTrack) => {
+                        if (audioTrack.userId === user._id) return true
+                        const managedStage = await distributor.readManagedStage(
+                            user._id,
+                            audioTrack.stageId
+                        )
+                        return !!managedStage
+                    })
+                    .then((hasPrivileges) => {
+                        if (hasPrivileges) {
+                            return distributor.updateAudioTrack(id, data).then(() => {
+                                if (fn) {
+                                    return fn(null)
+                                }
+                                return undefined
+                            })
                         }
-                        return undefined
+                        throw new Error('No privileges')
                     })
                     .catch((e) => {
                         if (fn) {
@@ -158,19 +168,19 @@ const handleSocketClientConnection = async (
             }
         )
         socket.on(
-            ClientDeviceEvents.RemoveLocalAudioTrack,
+            ClientDeviceEvents.RemoveAudioTrack,
             (
-                payload: ClientDevicePayloads.RemoveLocalAudioTrack,
+                payload: ClientDevicePayloads.RemoveAudioTrack,
                 fn?: (error: string | null) => void
             ) => {
                 trace(
-                    `${user.name}: ${ClientDeviceEvents.RemoveLocalAudioTrack}(${JSON.stringify(
+                    `${user.name}: ${ClientDeviceEvents.RemoveAudioTrack}(${JSON.stringify(
                         payload
                     )})`
                 )
                 const id = new ObjectId(payload)
                 return distributor
-                    .deleteLocalAudioTrack(user._id, id)
+                    .deleteAudioTrack(id)
                     .then(() => {
                         if (fn) {
                             return fn(null)
@@ -185,19 +195,21 @@ const handleSocketClientConnection = async (
                     })
             }
         )
+
+        /* VIDEO TRACK */
         socket.on(
-            ClientDeviceEvents.CreateLocalVideoTrack,
+            ClientDeviceEvents.CreateVideoTrack,
             (
-                payload: ClientDevicePayloads.CreateLocalVideoTrack,
-                fn?: (error: string | null, track?: LocalVideoTrack<ObjectId>) => void
+                payload: ClientDevicePayloads.CreateVideoTrack,
+                fn?: (error: string | null, track?: VideoTrack<ObjectId>) => void
             ) => {
                 trace(
-                    `${user.name}: ${ClientDeviceEvents.CreateLocalVideoTrack}(${JSON.stringify(
+                    `${user.name}: ${ClientDeviceEvents.CreateVideoTrack}(${JSON.stringify(
                         payload
                     )})`
                 )
                 return distributor
-                    .createLocalVideoTrack({
+                    .createVideoTrack({
                         type: '',
                         ...payload,
                         userId: user._id,
@@ -216,25 +228,38 @@ const handleSocketClientConnection = async (
             }
         )
         socket.on(
-            ClientDeviceEvents.ChangeLocalVideoTrack,
+            ClientDeviceEvents.ChangeVideoTrack,
             (
-                payload: ClientDevicePayloads.ChangeLocalVideoTrack,
+                payload: ClientDevicePayloads.ChangeVideoTrack,
                 fn?: (error: string | null) => void
             ) => {
                 trace(
-                    `${user.name}: ${ClientDeviceEvents.ChangeLocalVideoTrack}(${JSON.stringify(
+                    `${user.name}: ${ClientDeviceEvents.ChangeVideoTrack}(${JSON.stringify(
                         payload
                     )})`
                 )
-                const { _id, deviceId, userId, ...data } = payload
+                const { _id, userId, deviceId, ...data } = payload
                 const id = new ObjectId(_id)
                 return distributor
-                    .updateLocalVideoTrack(user._id, id, data)
-                    .then(() => {
-                        if (fn) {
-                            return fn(null)
+                    .readVideoTrack(id)
+                    .then(async (audioTrack) => {
+                        if (audioTrack.userId === user._id) return true
+                        const managedStage = await distributor.readManagedStage(
+                            user._id,
+                            audioTrack.stageId
+                        )
+                        return !!managedStage
+                    })
+                    .then((hasPrivileges) => {
+                        if (hasPrivileges) {
+                            return distributor.updateVideoTrack(id, data).then(() => {
+                                if (fn) {
+                                    return fn(null)
+                                }
+                                return undefined
+                            })
                         }
-                        return undefined
+                        throw new Error('No privileges')
                     })
                     .catch((e) => {
                         if (fn) {
@@ -245,19 +270,19 @@ const handleSocketClientConnection = async (
             }
         )
         socket.on(
-            ClientDeviceEvents.RemoveLocalVideoTrack,
+            ClientDeviceEvents.RemoveVideoTrack,
             (
-                payload: ClientDevicePayloads.RemoveLocalVideoTrack,
+                payload: ClientDevicePayloads.RemoveVideoTrack,
                 fn?: (error: string | null) => void
             ) => {
                 trace(
-                    `${user.name}: ${ClientDeviceEvents.RemoveLocalVideoTrack}(${JSON.stringify(
+                    `${user.name}: ${ClientDeviceEvents.RemoveVideoTrack}(${JSON.stringify(
                         payload
                     )})`
                 )
                 const id = new ObjectId(payload)
                 return distributor
-                    .deleteLocalVideoTrack(user._id, id)
+                    .deleteVideoTrack(id)
                     .then(() => {
                         if (fn) {
                             return fn(null)
@@ -1194,68 +1219,45 @@ const handleSocketClientConnection = async (
     )
 
     socket.on(
-        ClientDeviceEvents.ChangeRemoteAudioTrack,
+        ClientDeviceEvents.SetCustomAudioTrackPosition,
         (
-            payload: ClientDevicePayloads.ChangeRemoteAudioTrack,
+            payload: ClientDevicePayloads.SetCustomAudioTrackPosition,
+            fn?: (error: string | null) => void
+        ) => {
+            trace(`${user.name}: ${ClientDeviceEvents.SetCustomAudioTrackPosition}(${payload})`)
+            const audioTrackId = new ObjectId(payload.audioTrackId)
+            const deviceId = new ObjectId(payload.deviceId)
+            return distributor
+                .upsertCustomAudioTrackPosition(user._id, audioTrackId, deviceId, payload)
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e) => {
+                    if (fn) {
+                        fn(e.message)
+                    }
+                    error(e)
+                })
+        }
+    )
+    socket.on(
+        ClientDeviceEvents.SetCustomAudioTrackVolume,
+        (
+            payload: ClientDevicePayloads.SetCustomAudioTrackVolume,
             fn?: (error: string | null) => void
         ) => {
             trace(
-                `${user.name}: ${ClientDeviceEvents.ChangeRemoteAudioTrack}(${JSON.stringify(
+                `${user.name}: ${ClientDeviceEvents.SetCustomAudioTrackVolume}(${JSON.stringify(
                     payload
                 )})`
             )
-            const { _id, userId, stageId, stageMemberId, localAudioTrackId, ...data } = payload
-            const id = new ObjectId(_id)
-            return distributor
-                .readRemoteAudioTrack(id)
-                .then((remoteAudioTrack) => {
-                    if (remoteAudioTrack) {
-                        return distributor
-                            .readManagedStage(user._id, remoteAudioTrack.stageId)
-                            .then((stage) => {
-                                if (stage) {
-                                    return distributor.updateRemoteAudioTrack(id, data)
-                                }
-                                throw new Error(
-                                    `User ${user.name} has no privileges to change remote audio track ${id}`
-                                )
-                            })
-                    }
-                    throw new Error(`Unknown remote audio track ${id}`)
-                })
-                .then(() => {
-                    if (fn) {
-                        return fn(null)
-                    }
-                    return undefined
-                })
-                .catch((e) => {
-                    if (fn) {
-                        return fn(e.message)
-                    }
-                    return error(e)
-                })
-        }
-    )
-
-    socket.on(
-        ClientDeviceEvents.SetCustomRemoteAudioTrackPosition,
-        (
-            payload: ClientDevicePayloads.SetCustomRemoteAudioTrackPosition,
-            fn?: (error: string | null) => void
-        ) => {
-            trace(
-                `${user.name}: ${ClientDeviceEvents.SetCustomRemoteAudioTrackPosition}(${payload})`
-            )
-            const remoteAudioTrackId = new ObjectId(payload.remoteAudioTrackId)
+            const audioTrackId = new ObjectId(payload.audioTrackId)
             const deviceId = new ObjectId(payload.deviceId)
             return distributor
-                .upsertCustomRemoteAudioTrackPosition(
-                    user._id,
-                    remoteAudioTrackId,
-                    deviceId,
-                    payload
-                )
+                .upsertCustomAudioTrackVolume(user._id, audioTrackId, deviceId, payload)
                 .then(() => {
                     if (fn) {
                         return fn(null)
@@ -1271,20 +1273,15 @@ const handleSocketClientConnection = async (
         }
     )
     socket.on(
-        ClientDeviceEvents.SetCustomRemoteAudioTrackVolume,
+        ClientDeviceEvents.RemoveCustomAudioTrackPosition,
         (
-            payload: ClientDevicePayloads.SetCustomRemoteAudioTrackVolume,
+            payload: ClientDevicePayloads.RemoveCustomAudioTrackPosition,
             fn?: (error: string | null) => void
         ) => {
-            trace(
-                `${user.name}: ${
-                    ClientDeviceEvents.SetCustomRemoteAudioTrackVolume
-                }(${JSON.stringify(payload)})`
-            )
-            const remoteAudioTrackId = new ObjectId(payload.remoteAudioTrackId)
-            const deviceId = new ObjectId(payload.deviceId)
+            trace(`${user.name}: ${ClientDeviceEvents.RemoveCustomAudioTrackPosition}(${payload})`)
+            const customAudioTrackPositionId = new ObjectId(payload)
             return distributor
-                .upsertCustomRemoteAudioTrackVolume(user._id, remoteAudioTrackId, deviceId, payload)
+                .deleteCustomAudioTrackPosition(customAudioTrackPositionId)
                 .then(() => {
                     if (fn) {
                         return fn(null)
@@ -1300,43 +1297,15 @@ const handleSocketClientConnection = async (
         }
     )
     socket.on(
-        ClientDeviceEvents.RemoveCustomRemoteAudioTrackPosition,
+        ClientDeviceEvents.RemoveCustomAudioTrackVolume,
         (
-            payload: ClientDevicePayloads.RemoveCustomRemoteAudioTrackPosition,
+            payload: ClientDevicePayloads.RemoveCustomAudioTrackVolume,
             fn?: (error: string | null) => void
         ) => {
-            trace(
-                `${user.name}: ${ClientDeviceEvents.RemoveCustomRemoteAudioTrackPosition}(${payload})`
-            )
-            const customRemoteAudioTrackPositionId = new ObjectId(payload)
+            trace(`${user.name}: ${ClientDeviceEvents.RemoveCustomAudioTrackVolume}(${payload})`)
+            const customAudioTrackVolumeId = new ObjectId(payload)
             return distributor
-                .deleteCustomRemoteAudioTrackPosition(customRemoteAudioTrackPositionId)
-                .then(() => {
-                    if (fn) {
-                        return fn(null)
-                    }
-                    return undefined
-                })
-                .catch((e) => {
-                    if (fn) {
-                        fn(e.message)
-                    }
-                    error(e)
-                })
-        }
-    )
-    socket.on(
-        ClientDeviceEvents.RemoveCustomRemoteAudioTrackVolume,
-        (
-            payload: ClientDevicePayloads.RemoveCustomRemoteAudioTrackVolume,
-            fn?: (error: string | null) => void
-        ) => {
-            trace(
-                `${user.name}: ${ClientDeviceEvents.RemoveCustomRemoteAudioTrackVolume}(${payload})`
-            )
-            const customRemoteAudioTrackVolumeId = new ObjectId(payload)
-            return distributor
-                .deleteCustomRemoteAudioTrackVolume(customRemoteAudioTrackVolumeId)
+                .deleteCustomAudioTrackVolume(customAudioTrackVolumeId)
                 .then(() => {
                     if (fn) {
                         return fn(null)
