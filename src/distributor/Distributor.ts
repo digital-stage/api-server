@@ -533,7 +533,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 createdAt: new Date(),
                 _id: undefined,
                 apiServer: this._apiServer,
-            })
+            } as any)
             .then((result) => result.ops[0])
             .then(async (device) => {
                 const stageMembers = await this._db

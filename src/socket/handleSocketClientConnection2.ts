@@ -12,28 +12,35 @@ const handleSocketClientConnection = async (
     let device: Device<ObjectId>
     if (initialDevice) {
         if (initialDevice.uuid) {
-            device = await db.collection<Device<ObjectId>>(Collections.DEVICES).findOneAndUpdate(
-                { uuid: initialDevice.uuid, userId: user._id },
-                {
-                    $set: {
-                        ...initialDevice,
-                        userId: user._id,
-                        _id: undefined,
-                        online: true,
-                        lastLoginAt: new Date(),
-                    },
-                }
-            )
+            device = await db
+                .collection<Device<ObjectId>>(Collections.DEVICES)
+                .findOneAndUpdate(
+                    { uuid: initialDevice.uuid, userId: user._id },
+                    {
+                        $set: {
+                            ...initialDevice,
+                            userId: user._id,
+                            _id: undefined,
+                            online: true,
+                            lastLoginAt: new Date(),
+                        },
+                    }
+                )
+                .then((result) => result.value)
         }
         if (!device) {
             // Create device
-            device = await db.collection<Device<ObjectId>>(Collections.DEVICES).insertOne({
-                InitialDevice,
-                ...initialDevice,
-                userId: user._id,
-                online: true,
-                lastLoginAt: new Date(),
-            })
+            device = await db
+                .collection<Device<ObjectId>>(Collections.DEVICES)
+                .insertOne({
+                    InitialDevice,
+                    ...initialDevice,
+                    _id: undefined,
+                    userId: user._id,
+                    online: true,
+                    lastLoginAt: new Date(),
+                } as any)
+                .then((result) => result.ops[0])
         }
     }
 
