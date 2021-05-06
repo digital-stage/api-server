@@ -2247,12 +2247,8 @@ class Distributor extends EventEmitter.EventEmitter {
                 { userId, audioTrackId, deviceId },
                 {
                     $set: update,
-                    $setOnInsert: {
-                        ...DefaultThreeDimensionalProperties,
-                        ...update,
-                    },
                 },
-                { upsert: true, projection: { _id: 1 } }
+                { upsert: false, projection: { _id: 1 } }
             )
             .then((result) => {
                 if (result.value) {
@@ -2355,13 +2351,8 @@ class Distributor extends EventEmitter.EventEmitter {
                 { userId, audioTrackId, deviceId },
                 {
                     $set: update,
-                    $setOnInsert: {
-                        volume: 1.0,
-                        muted: false,
-                        ...update,
-                    },
                 },
-                { upsert: true, projection: { _id: 1 } }
+                { upsert: false, projection: { _id: 1 } }
             )
             .then((result) => {
                 if (result.value) {

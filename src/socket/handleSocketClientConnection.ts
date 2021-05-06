@@ -107,17 +107,26 @@ const handleSocketClientConnection = async (
                     )})`
                 )
                 return distributor
-                    .createAudioTrack({
-                        type: '',
-                        ...payload,
-                        userId: user._id,
-                        deviceId: device._id,
-                    })
-                    .then((track) => {
-                        if (fn) {
-                            return fn(null, track)
+                    .readUser(user._id)
+                    .then((currentUser) => {
+                        if (currentUser.stageId) {
+                            return distributor
+                                .createAudioTrack({
+                                    type: '',
+                                    ...payload,
+                                    stageId: currentUser.stageId,
+                                    stageMemberId: currentUser.stageMemberId,
+                                    userId: user._id,
+                                    deviceId: device._id,
+                                })
+                                .then((track) => {
+                                    if (fn) {
+                                        return fn(null, track)
+                                    }
+                                    return undefined
+                                })
                         }
-                        return undefined
+                        throw new Error('Not inside a stage')
                     })
                     .catch((e) => {
                         error(e)
@@ -180,12 +189,25 @@ const handleSocketClientConnection = async (
                 )
                 const id = new ObjectId(payload)
                 return distributor
-                    .deleteAudioTrack(id)
-                    .then(() => {
-                        if (fn) {
-                            return fn(null)
+                    .readAudioTrack(id)
+                    .then(async (audioTrack) => {
+                        if (audioTrack.userId === user._id) return true
+                        const managedStage = await distributor.readManagedStage(
+                            user._id,
+                            audioTrack.stageId
+                        )
+                        return !!managedStage
+                    })
+                    .then((hasPrivileges) => {
+                        if (hasPrivileges) {
+                            return distributor.deleteAudioTrack(id).then(() => {
+                                if (fn) {
+                                    return fn(null)
+                                }
+                                return undefined
+                            })
                         }
-                        return undefined
+                        throw new Error('No privileges')
                     })
                     .catch((e) => {
                         if (fn) {
@@ -282,12 +304,25 @@ const handleSocketClientConnection = async (
                 )
                 const id = new ObjectId(payload)
                 return distributor
-                    .deleteVideoTrack(id)
-                    .then(() => {
-                        if (fn) {
-                            return fn(null)
+                    .readVideoTrack(id)
+                    .then(async (audioTrack) => {
+                        if (audioTrack.userId === user._id) return true
+                        const managedStage = await distributor.readManagedStage(
+                            user._id,
+                            audioTrack.stageId
+                        )
+                        return !!managedStage
+                    })
+                    .then((hasPrivileges) => {
+                        if (hasPrivileges) {
+                            return distributor.deleteVideoTrack(id).then(() => {
+                                if (fn) {
+                                    return fn(null)
+                                }
+                                return undefined
+                            })
                         }
-                        return undefined
+                        throw new Error('No privileges')
                     })
                     .catch((e) => {
                         if (fn) {
