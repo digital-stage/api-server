@@ -525,13 +525,14 @@ class Distributor extends EventEmitter.EventEmitter {
         this._db
             .collection<Device<ObjectId>>(Collections.DEVICES)
             .insertOne({
-                InitialDevice,
+                ...InitialDevice,
+                soundCardId: null,
                 ...init,
+                _id: undefined,
                 online: true,
                 userId: init.userId,
                 lastLoginAt: new Date(),
                 createdAt: new Date(),
-                _id: undefined,
                 apiServer: this._apiServer,
             } as any)
             .then((result) => result.ops[0])

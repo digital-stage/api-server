@@ -33,7 +33,8 @@ const handleSocketClientConnection = async (
             device = await db
                 .collection<Device<ObjectId>>(Collections.DEVICES)
                 .insertOne({
-                    InitialDevice,
+                    ...InitialDevice,
+                    soundCardId: null,
                     ...initialDevice,
                     _id: undefined,
                     userId: user._id,
