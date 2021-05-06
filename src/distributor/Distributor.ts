@@ -31,6 +31,7 @@ import {
     InitialStagePackage,
     DefaultThreeDimensionalProperties,
     DefaultVolumeProperties,
+    InitialDevice,
 } from '@digitalstage/api-types'
 import { DEBUG_EVENTS, DEBUG_PAYLOAD } from '../env'
 import useLogger from '../useLogger'
@@ -524,26 +525,7 @@ class Distributor extends EventEmitter.EventEmitter {
         this._db
             .collection<Device<ObjectId>>(Collections.DEVICES)
             .insertOne({
-                uuid: null,
-                type: 'unknown',
-                availableSoundCardIds: [],
-                soundCardId: null,
-                requestSession: false,
-                canAudio: false,
-                canVideo: false,
-                receiveAudio: false,
-                receiveVideo: false,
-                sendAudio: false,
-                sendVideo: false,
-                ovRawMode: false,
-                ovRenderISM: false,
-                ovP2p: true,
-                ovReceiverType: 'ortf',
-                ovRenderReverb: true,
-                ovReverbGain: 0.4,
-                canOv: false,
-                volume: 1,
-                egoGain: 1,
+                InitialDevice,
                 ...init,
                 online: true,
                 userId: init.userId,
