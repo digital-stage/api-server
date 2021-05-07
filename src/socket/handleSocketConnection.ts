@@ -56,9 +56,9 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                     })
                 )
                 .catch((e) => {
+                    warn(`Attempt to connect with invalid token from IP ${getIP(socket)}`)
                     socket.disconnect()
                     error(e)
-                    warn(`Attempt to connect with invalid token from IP ${getIP(socket)}`)
                 })
         }
         warn(`Attempt to connect without token from IP ${getIP(socket)}`)
