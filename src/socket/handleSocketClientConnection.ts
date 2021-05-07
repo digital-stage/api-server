@@ -233,6 +233,7 @@ const handleSocketClientConnection = async (
                     )})`
                 )
                 const { stageId, ...data } = payload
+                console.log(`Looking for ${stageId} and device ${device._id}`)
                 return distributor
                     .readStageDeviceByStage(device._id, new ObjectId(stageId))
                     .then((stageDevice) => {
