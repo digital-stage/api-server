@@ -18,6 +18,9 @@ if (REDIS_URL) {
 }
 
 const uws = uWS.App()
+if (DEBUG_PAYLOAD) {
+    warn('Verbose output of socket events ON')
+}
 const io = new UWSProvider(uws, {
     redisUrl: REDIS_URL,
     debug: DEBUG_PAYLOAD,

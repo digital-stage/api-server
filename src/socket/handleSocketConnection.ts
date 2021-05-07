@@ -1,6 +1,7 @@
 import ITeckosSocket from 'teckos/lib/types/ITeckosSocket'
 import { ObjectId } from 'mongodb'
 import { ClientDeviceEvents, Payloads } from '@digitalstage/api-types'
+import { UWSSocket } from 'teckos'
 import { API_KEY } from '../env'
 import useLogger from '../useLogger'
 import handleSocketClientConnection from './handleSocketClientConnection'
@@ -23,8 +24,11 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                     _id: undefined,
                 })
             }
+            const uwsSocket = socket as UWSSocket
             error(
-                `Router ${router.url} tried to sign in with wrong api key ${apiKey}, should be ${API_KEY}`
+                `Router ${
+                    router.url
+                } with IP ${uwsSocket.ws.getRemoteAddressAsText()} tried to sign in with wrong api key ${apiKey}, should be ${API_KEY}`
             )
         } else {
             error(`Router ${router.url} dit not provide any api key`)

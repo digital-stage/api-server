@@ -118,6 +118,7 @@ const handleSocketClientConnection = async (
                                     userId: user._id,
                                     deviceId: device._id,
                                     stageId: stageDevice.stageId,
+                                    stageMemberId: stageDevice.stageMemberId,
                                     stageDeviceId: stageDevice._id,
                                 })
                                 .then((track) => {
@@ -243,6 +244,7 @@ const handleSocketClientConnection = async (
                                     userId: user._id,
                                     deviceId: device._id,
                                     stageId: stageDevice.stageId,
+                                    stageMemberId: stageDevice.stageMemberId,
                                     stageDeviceId: stageDevice._id,
                                 })
                                 .then((track) => {
