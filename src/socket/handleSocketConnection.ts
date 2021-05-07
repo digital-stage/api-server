@@ -42,8 +42,8 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
 
     socket.on(ClientDeviceEvents.ConnectWithToken, (payload: Payloads.ConnectWithToken) => {
         const { token, device } = payload
-        trace('New connection with token')
         if (token) {
+            trace('New connection with token')
             return getUserByToken(token)
                 .then((user) =>
                     handleSocketClientConnection(distributor, socket, user, {
@@ -58,9 +58,10 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                 .catch((e) => {
                     socket.disconnect()
                     error(e)
+                    warn(`Attempt to connect with invalid token from IP ${getIP(socket)}`)
                 })
         }
-        warn(`Attempt to connect with invalid token from IP ${getIP(socket)}`)
+        warn(`Attempt to connect without token from IP ${getIP(socket)}`)
         return socket.disconnect()
     })
 }
