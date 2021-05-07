@@ -15,7 +15,7 @@ const enc = new TextDecoder('utf-8')
 
 const getIP = (socket: ITeckosSocket): string => {
     const uwsSocket = socket as UWSSocket
-    return enc.decode(uwsSocket.ws.getRemoteAddressAsText())
+    return Buffer.from(uwsSocket.ws.getRemoteAddressAsText()).toString()
 }
 
 const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket): void => {
