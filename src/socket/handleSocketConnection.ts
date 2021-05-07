@@ -11,8 +11,6 @@ import handleSocketRouterConnection from './handleSocketRouterConnection'
 
 const { error, warn, trace } = useLogger('socket')
 
-const enc = new TextDecoder('utf-8')
-
 const getIP = (socket: ITeckosSocket): string => {
     const uwsSocket = socket as UWSSocket
     return Buffer.from(uwsSocket.ws.getRemoteAddressAsText()).toString()
