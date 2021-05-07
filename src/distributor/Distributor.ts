@@ -60,6 +60,16 @@ export enum Collections {
 
 ObjectId.cacheHexString = true
 
+/**
+ * The distributor ensures the persistence, consistency and distribution of all state data.
+ *
+ * Regarding audio and video tracks:
+ *  - A user can create audio and video tracks for his current device at any time.
+ *    Only needed is the initial payload and stage Id.
+ *  - The socket handler will remove all tracks when the device goes offline.
+ *  - Theoretically tracks can be shared for several stages at a time (but usually the client side
+ *    is implemented to share only tracks for the current stage)
+ */
 class Distributor extends EventEmitter.EventEmitter {
     private readonly _db: Db
 
@@ -609,39 +619,42 @@ class Distributor extends EventEmitter.EventEmitter {
                 }
             )
             .then(async (result) => {
-                if (result.value && update.online !== undefined) {
-                    // Set all sound cards offline
-                    if (!update.online) {
-                        await this._db
-                            .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
-                            .find({ deviceId: id })
-                            .toArray()
-                            .then((soundCards) =>
-                                soundCards.map((soundCard) =>
-                                    this.updateSoundCard(soundCard._id, {
-                                        online: false,
-                                    })
+                if (result.value) {
+                    this.emit(ServerDeviceEvents.DeviceChanged, payload)
+                    if (update.online !== undefined) {
+                        // Set all sound cards offline
+                        if (!update.online) {
+                            await this._db
+                                .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
+                                .find({ deviceId: id })
+                                .toArray()
+                                .then((soundCards) =>
+                                    soundCards.map((soundCard) =>
+                                        this.updateSoundCard(soundCard._id, {
+                                            online: false,
+                                        })
+                                    )
                                 )
-                            )
-                    }
-                    // Also update stage device
-                    const stageId = await this.readUser(result.value.userId).then(
-                        (user) => user.stageId
-                    )
-                    if (stageId) {
-                        await this._db
-                            .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
-                            .findOne(
-                                { stageId, deviceId: result.value._id },
-                                { projection: { _id: 1 } }
-                            )
-                            .then((stageDevice) => {
-                                if (stageDevice)
-                                    this.updateStageDevice(stageDevice._id, {
-                                        active: update.online,
-                                    })
-                                return null
-                            })
+                        }
+                        // Also update stage device
+                        const stageId = await this.readUser(result.value.userId).then(
+                            (user) => user.stageId
+                        )
+                        if (stageId) {
+                            await this._db
+                                .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
+                                .findOne(
+                                    { stageId, deviceId: result.value._id },
+                                    { projection: { _id: 1 } }
+                                )
+                                .then((stageDevice) => {
+                                    if (stageDevice)
+                                        this.updateStageDevice(stageDevice._id, {
+                                            active: update.online,
+                                        })
+                                    return null
+                                })
+                        }
                     }
                 }
                 return undefined
@@ -1371,6 +1384,31 @@ class Distributor extends EventEmitter.EventEmitter {
                         _id: id,
                     }
                     this.emit(ServerDeviceEvents.StageDeviceChanged, payload)
+                    if (update.active !== undefined) {
+                        if (!update.active) {
+                            // Remove all related audio and video tracks
+                            await Promise.all([
+                                this._db
+                                    .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
+                                    .find({ stageDeviceId: id }, { projection: { _id: 1 } })
+                                    .toArray()
+                                    .then((videoTracks) =>
+                                        videoTracks.map((videoTrack) =>
+                                            this.deleteVideoTrack(videoTrack._id)
+                                        )
+                                    ),
+                                this._db
+                                    .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
+                                    .find({ stageDeviceId: id }, { projection: { _id: 1 } })
+                                    .toArray()
+                                    .then((audioTracks) =>
+                                        audioTracks.map((audioTrack) =>
+                                            this.deleteAudioTrack(audioTrack._id)
+                                        )
+                                    ),
+                            ])
+                        }
+                    }
                     return this.sendToJoinedStageMembers(
                         result.value.stageId,
                         ServerDeviceEvents.StageDeviceChanged,
@@ -1419,16 +1457,18 @@ class Distributor extends EventEmitter.EventEmitter {
                             .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
                             .find({ stageDeviceId: id }, { projection: { _id: 1 } })
                             .toArray()
-                            .then((producers) =>
-                                producers.map((producer) => this.deleteVideoTrack(producer._id))
+                            .then((videoTracks) =>
+                                videoTracks.map((videoTrack) =>
+                                    this.deleteVideoTrack(videoTrack._id)
+                                )
                             ),
                         this._db
                             .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
                             .find({ stageDeviceId: id }, { projection: { _id: 1 } })
                             .toArray()
-                            .then((remoteAudioTracks) =>
-                                remoteAudioTracks.map((remoteAudioTrack) =>
-                                    this.deleteAudioTrack(remoteAudioTrack._id)
+                            .then((audioTracks) =>
+                                audioTracks.map((audioTrack) =>
+                                    this.deleteAudioTrack(audioTrack._id)
                                 )
                             ),
                         this.sendToJoinedStageMembers(
@@ -2433,6 +2473,18 @@ class Distributor extends EventEmitter.EventEmitter {
             })
 
     /* STAGE HANDLING */
+    /**
+     * Checks for stage credentials.
+     * Creates a stage member if user is new to stage.
+     * Updates the existing stage member to be online.
+     * Updates also all stage devices to be online.
+     * Creates a muted custom stage member track for him/herself if new to stage.
+     *
+     * @param userId
+     * @param stageId
+     * @param groupId
+     * @param password
+     */
     joinStage = async (
         userId: ObjectId,
         stageId: ObjectId,
@@ -2527,38 +2579,13 @@ class Distributor extends EventEmitter.EventEmitter {
                 await this.updateStageMember(previousObjectId, { active: false })
             }
         }
-
-        // Also publish all local audio and video tracks
-
-        // Add remote representations for all local audio and video tracks
-        /*
-    const localVideoTracks = await this._db
-      .collection<LocalVideoTrack<ObjectId>>(Collections.LOCAL_VIDEO_TRACKS)
-      .find({userId: })
-      .toArray();
-    for(const localVideoTrack of localVideoTracks) {
-      await this.createVideoTrack({
-        ...localVideoTrack,
-        _id: undefined,
-        userId: user._id,
-        deviceId: stageDevice.deviceId,
-        stageId: user.stageId,
-        stageDeviceId: stageDevice._id,
-        stageMemberId: user.stageMemberId,
-        localAudioTrackId: localAudioTrack._id,
-      });
-    }
-    const localAudioTracks = await this._db
-      .collection<LocalAudioTrack<ObjectId>>(Collections.LOCAL_AUDIO_TRACKS)
-      .find({deviceId: result.value.deviceId})
-      .toArray();
-    for(const remoteAudioTrack of remoteAudioTracks) {
-      await this.createAudioTrack(remoteAudioTrack._id);
-    } */
-
         trace(`joinStage: ${Date.now() - startTime}ms`)
     }
 
+    /**
+     * Sets the stage member inactive and de-assigns the user from the stage
+     * @param userId
+     */
     leaveStage = async (userId: ObjectId): Promise<any> => {
         const startTime = Date.now()
         const user = await this.readUser(userId)
@@ -2584,6 +2611,11 @@ class Distributor extends EventEmitter.EventEmitter {
         trace(`leaveStage: ${Date.now() - startTime}ms`)
     }
 
+    /**
+     * Removes all user related data from the stage and de-assign the user from stage
+     * @param userId
+     * @param stageId
+     */
     leaveStageForGood = (userId: ObjectId, stageId: ObjectId): Promise<any> =>
         this.readUser(userId).then(async (user) => {
             if (user) {
