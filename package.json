@@ -5,10 +5,10 @@
   "description": "Stage and device orchestration server for headless audio clients",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "DEBUG=server* nodemon --watch './src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "dev": "DEBUG=server*,teckos* nodemon --watch './src/**/*.ts' --exec 'ts-node' src/index.ts",
     "lint": "npx eslint ./src --ext .js,.ts --fix",
     "build": "tsc",
-    "start": "DEBUG=server* node ./dist/index.js"
+    "start": "DEBUG=server*,teckos* node ./dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -52,14 +52,14 @@
     "@sentry/node": "^6.3.5",
     "@sentry/tracing": "^6.3.5",
     "debug": "^4.3.1",
-    "dotenv": "^8.5.1",
+    "dotenv": "^9.0.0",
     "dotenv-expand": "^5.1.0",
     "ioredis": "^4.27.2",
     "ip": "^1.1.5",
     "lodash": "^4.17.21",
     "mongodb": "^3.6.6",
     "node-fetch": "^2.6.1",
-    "teckos": "0.2.4",
+    "teckos": "^0.2.8",
     "uncaught": "^0.0.5"
   }
 }

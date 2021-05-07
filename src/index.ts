@@ -2,7 +2,7 @@ import { UWSProvider } from 'teckos'
 import * as uWS from 'teckos/uws'
 import { MongoClient } from 'mongodb'
 import { address } from 'ip'
-import { MONGO_CA, MONGO_DB, MONGO_URL, PORT, REDIS_URL } from './env'
+import { DEBUG_PAYLOAD, MONGO_CA, MONGO_DB, MONGO_URL, PORT, REDIS_URL } from './env'
 import useLogger from './useLogger'
 import handleSocketConnection from './socket/handleSocketConnection'
 import Distributor from './distributor/Distributor'
@@ -20,6 +20,7 @@ if (REDIS_URL) {
 const uws = uWS.App()
 const io = new UWSProvider(uws, {
     redisUrl: REDIS_URL,
+    debug: DEBUG_PAYLOAD,
 })
 
 uws.get('/beat', (res) => {

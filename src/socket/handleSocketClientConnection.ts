@@ -106,18 +106,19 @@ const handleSocketClientConnection = async (
                         payload
                     )})`
                 )
+                const { stageId, ...data } = payload
                 return distributor
-                    .readUser(user._id)
-                    .then((currentUser) => {
-                        if (currentUser.stageId) {
+                    .readStageDeviceByStage(device._id, new ObjectId(stageId))
+                    .then((stageDevice) => {
+                        if (stageDevice) {
                             return distributor
                                 .createAudioTrack({
                                     type: '',
-                                    ...payload,
-                                    stageId: currentUser.stageId,
-                                    stageMemberId: currentUser.stageMemberId,
+                                    ...data,
                                     userId: user._id,
                                     deviceId: device._id,
+                                    stageId: stageDevice.stageId,
+                                    stageDeviceId: stageDevice._id,
                                 })
                                 .then((track) => {
                                     if (fn) {
@@ -126,7 +127,7 @@ const handleSocketClientConnection = async (
                                     return undefined
                                 })
                         }
-                        throw new Error('Not inside a stage')
+                        throw new Error('No stage device found to assign audio track to')
                     })
                     .catch((e) => {
                         error(e)
@@ -230,18 +231,28 @@ const handleSocketClientConnection = async (
                         payload
                     )})`
                 )
+                const { stageId, ...data } = payload
                 return distributor
-                    .createVideoTrack({
-                        type: '',
-                        ...payload,
-                        userId: user._id,
-                        deviceId: device._id,
-                    })
-                    .then((track) => {
-                        if (fn) {
-                            return fn(null, track)
+                    .readStageDeviceByStage(device._id, new ObjectId(stageId))
+                    .then((stageDevice) => {
+                        if (stageDevice) {
+                            return distributor
+                                .createVideoTrack({
+                                    type: '',
+                                    ...data,
+                                    userId: user._id,
+                                    deviceId: device._id,
+                                    stageId: stageDevice.stageId,
+                                    stageDeviceId: stageDevice._id,
+                                })
+                                .then((track) => {
+                                    if (fn) {
+                                        return fn(null, track)
+                                    }
+                                    return undefined
+                                })
                         }
-                        return undefined
+                        throw new Error('No stage device found to assign video track to')
                     })
                     .catch((e) => {
                         error(e)

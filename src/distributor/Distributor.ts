@@ -1364,6 +1364,14 @@ class Distributor extends EventEmitter.EventEmitter {
     readStageDevice = (id: ObjectId): Promise<StageDevice<ObjectId>> =>
         this._db.collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES).findOne({ _id: id })
 
+    readStageDeviceByStage = (
+        deviceId: ObjectId,
+        stageId: ObjectId
+    ): Promise<StageDevice<ObjectId>> =>
+        this._db
+            .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
+            .findOne({ deviceId, stageId })
+
     updateStageDevice = (
         id: ObjectId,
         update: Partial<
