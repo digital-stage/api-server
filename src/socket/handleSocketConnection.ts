@@ -23,7 +23,9 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                     _id: undefined,
                 })
             }
-            error(`Router ${router.url} tried to sign in with wrong api key ${apiKey}`)
+            error(
+                `Router ${router.url} tried to sign in with wrong api key ${apiKey}, should be ${API_KEY}`
+            )
         } else {
             error(`Router ${router.url} dit not provide any api key`)
         }
