@@ -11,6 +11,13 @@ import handleSocketRouterConnection from './handleSocketRouterConnection'
 
 const { error, warn, trace } = useLogger('socket')
 
+const enc = new TextDecoder('utf-8')
+
+const getIP = (socket: ITeckosSocket): string => {
+    const uwsSocket = socket as UWSSocket
+    return enc.decode(uwsSocket.ws.getRemoteAddressAsText())
+}
+
 const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket): void => {
     const { getUserByToken } = useAuth(distributor)
 
@@ -24,11 +31,10 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                     _id: undefined,
                 })
             }
-            const uwsSocket = socket as UWSSocket
             error(
-                `Router ${
-                    router.url
-                } with IP ${uwsSocket.ws.getRemoteAddressAsText()} tried to sign in with wrong api key ${apiKey}, should be ${API_KEY}`
+                `Router ${router.url} with IP ${getIP(
+                    socket
+                )} tried to sign in with wrong api key ${apiKey}, should be ${API_KEY}`
             )
         } else {
             error(`Router ${router.url} dit not provide any api key`)
@@ -56,7 +62,7 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                     error(e)
                 })
         }
-        warn('Attempt to connect with invalid token')
+        warn(`Attempt to connect with invalid token from IP ${getIP(socket)}`)
         return socket.disconnect()
     })
 }
