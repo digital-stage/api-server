@@ -34,7 +34,7 @@ const handleSocketClientConnection = async (
                 .collection<Device<ObjectId>>(Collections.DEVICES)
                 .insertOne({
                     uuid: null,
-                    type: 'unknown',
+                    type: 'mediasoup',
                     requestSession: false,
                     canAudio: false,
                     canVideo: false,

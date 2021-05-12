@@ -549,6 +549,8 @@ class Distributor extends EventEmitter.EventEmitter {
                             groupId: stageMember.groupId,
                             stageMemberId: stageMember._id,
                             active: device.online,
+                            type: device.type,
+                            name: device.type,
                             sendLocal: true,
                             ...DefaultThreeDimensionalProperties,
                             ...DefaultVolumeProperties,
@@ -906,13 +908,13 @@ class Distributor extends EventEmitter.EventEmitter {
                 const stage = result.ops[0] as Stage<ObjectId>
                 this.emit(
                     ServerDeviceEvents.StageAdded,
-                    (stage as unknown) as ServerDevicePayloads.StageAdded
+                    stage as unknown as ServerDevicePayloads.StageAdded
                 )
                 stage.admins.forEach((adminId) =>
                     this.sendToUser(
                         adminId,
                         ServerDeviceEvents.StageAdded,
-                        (stage as unknown) as ServerDevicePayloads.StageAdded
+                        stage as unknown as ServerDevicePayloads.StageAdded
                     )
                 )
                 return this.assignRoutersToStage(stage).then(() => stage)
@@ -1201,6 +1203,8 @@ class Distributor extends EventEmitter.EventEmitter {
                                 groupId: initial.groupId,
                                 stageMemberId: stageMember._id,
                                 active: device.online,
+                                name: device.type,
+                                type: device.type,
                                 sendLocal: true,
                                 ...DefaultThreeDimensionalProperties,
                                 ...DefaultVolumeProperties,
@@ -1348,17 +1352,15 @@ class Distributor extends EventEmitter.EventEmitter {
                 order,
             })
             .then((result) => result.ops[0] as StageDevice<ObjectId>)
-            .then(
-                async (stageDevice): Promise<StageDevice<ObjectId>> => {
-                    this.emit(ServerDeviceEvents.StageDeviceAdded, stageDevice)
-                    await this.sendToJoinedStageMembers(
-                        stageDevice.stageId,
-                        ServerDeviceEvents.StageDeviceAdded,
-                        stageDevice
-                    )
-                    return stageDevice
-                }
-            )
+            .then(async (stageDevice): Promise<StageDevice<ObjectId>> => {
+                this.emit(ServerDeviceEvents.StageDeviceAdded, stageDevice)
+                await this.sendToJoinedStageMembers(
+                    stageDevice.stageId,
+                    ServerDeviceEvents.StageDeviceAdded,
+                    stageDevice
+                )
+                return stageDevice
+            })
     }
 
     readStageDevice = (id: ObjectId): Promise<StageDevice<ObjectId>> =>
