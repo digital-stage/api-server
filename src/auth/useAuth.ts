@@ -1,7 +1,8 @@
 import fetch from 'node-fetch'
-import { HttpRequest } from 'teckos/uws'
 import { ObjectId } from 'mongodb'
 import { User } from '@digitalstage/api-types'
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { HttpRequest } from 'teckos/uws'
 import { AUTH_URL, RESTRICT_STAGE_CREATION } from '../env'
 import Distributor from '../distributor/Distributor'
 import useLogger from '../useLogger'

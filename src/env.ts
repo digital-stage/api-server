@@ -14,7 +14,9 @@ dotenvExpand(env)
 
 const { MONGO_URL, REDIS_URL, MONGO_DB, PORT, AUTH_URL, API_KEY, SENTRY_DSN } = process.env
 
+// eslint-disable-next-line no-console
 console.info(`Loaded env from ${envPath}`)
+// eslint-disable-next-line no-console
 console.info(`Using auth server at ${AUTH_URL}`)
 
 const MONGO_CA = process.env.MONGO_CA ? [fs.readFileSync(process.env.MONGO_CA)] : undefined

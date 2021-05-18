@@ -1,4 +1,5 @@
 import { UWSProvider } from 'teckos'
+// eslint-disable-next-line import/no-extraneous-dependencies
 import * as uWS from 'teckos/uws'
 import { MongoClient } from 'mongodb'
 import { address } from 'ip'
