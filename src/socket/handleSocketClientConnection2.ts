@@ -35,6 +35,7 @@ const handleSocketClientConnection = async (
                 .insertOne({
                     uuid: null,
                     type: 'mediasoup',
+                    name: '',
                     requestSession: false,
                     canAudio: false,
                     canVideo: false,
