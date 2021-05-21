@@ -499,7 +499,42 @@ const handleSocketClientConnection = async (
             fn: (error: string | null, code?: string) => void
         ) =>
             distributor
-                .encodeInviteCode(new ObjectId(payload.stageId), new ObjectId(payload.groupId))
+                .readAdministratedStage(user._id, new ObjectId(payload.stageId))
+                .then((stage) => {
+                    if (stage) {
+                        return distributor.generateInviteCode(
+                            stage._id,
+                            new ObjectId(payload.groupId)
+                        )
+                    }
+                    throw new Error(
+                        `User ${user.name} has no privileges to generate a code for this stage`
+                    )
+                })
+                .then((code) => fn(null, code))
+                .catch((e) => {
+                    if (fn) {
+                        fn(e.message)
+                    }
+                    error(e)
+                })
+    )
+    socket.on(
+        ClientDeviceEvents.RevokeInviteCode,
+        (
+            payload: ClientDevicePayloads.RevokeInviteCode,
+            fn: (error: string | null, code?: string) => void
+        ) =>
+            distributor
+                .readAdministratedStage(user._id, new ObjectId(payload.stageId))
+                .then((stage) => {
+                    if (stage) {
+                        return distributor.resetInviteCode(stage._id, new ObjectId(payload.groupId))
+                    }
+                    throw new Error(
+                        `User ${user.name} has no privileges to generate a code for this stage`
+                    )
+                })
                 .then((code) => fn(null, code))
                 .catch((e) => {
                     if (fn) {

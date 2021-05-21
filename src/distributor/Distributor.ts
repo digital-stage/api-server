@@ -879,7 +879,7 @@ class Distributor extends EventEmitter.EventEmitter {
             })
 
     /* STAGE */
-    encodeInviteCode = (stageId: ObjectId, groupId: ObjectId): Promise<string> => {
+    generateInviteCode = (stageId: ObjectId, groupId: ObjectId): Promise<string> => {
         return this._db
             .collection<{ stageId: ObjectId; groupId: ObjectId; code: string }>(
                 Collections.INVITE_LINKS
@@ -892,33 +892,49 @@ class Distributor extends EventEmitter.EventEmitter {
                 if (result) {
                     return result.code
                 }
-                // Generate short UUID
-                let isUnique = false
-                let code: string
-                do {
-                    code = nanoid(4)
-                    // eslint-disable-next-line no-await-in-loop
-                    const existingEntry = await this._db
-                        .collection<{
-                            _id: ObjectId
-                            stageId: ObjectId
-                            groupId: ObjectId
-                            code: string
-                        }>(Collections.INVITE_LINKS)
-                        .findOne({ code })
-                    isUnique = !existingEntry
-                } while (!isUnique)
-                return this._db
-                    .collection<{ stageId: ObjectId; groupId: ObjectId; code: string }>(
-                        Collections.INVITE_LINKS
-                    )
-                    .insertOne({
+                return this.resetInviteCode(stageId, groupId)
+            })
+    }
+
+    resetInviteCode = async (stageId: ObjectId, groupId: ObjectId): Promise<string> => {
+        // Generate short UUID
+        let isUnique = false
+        let code: string
+        do {
+            code = nanoid(4)
+            // eslint-disable-next-line no-await-in-loop
+            const existingEntry = await this._db
+                .collection<{
+                    _id: ObjectId
+                    stageId: ObjectId
+                    groupId: ObjectId
+                    code: string
+                }>(Collections.INVITE_LINKS)
+                .findOne({ code })
+            isUnique = !existingEntry
+        } while (!isUnique)
+        return this._db
+            .collection<{ stageId: ObjectId; groupId: ObjectId; code: string }>(
+                Collections.INVITE_LINKS
+            )
+            .updateOne(
+                {
+                    stageId,
+                    groupId,
+                },
+                {
+                    $set: {
+                        code,
+                    },
+                    $setOnInsert: {
                         stageId,
                         groupId,
                         code,
-                    })
-                    .then(() => code)
-            })
+                    },
+                },
+                { upsert: true }
+            )
+            .then(() => code)
     }
 
     decodeInviteCode = (
