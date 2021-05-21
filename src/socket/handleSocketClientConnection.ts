@@ -508,7 +508,7 @@ const handleSocketClientConnection = async (
                         )
                     }
                     throw new Error(
-                        `User ${user.name} has no privileges to generate a code for this stage`
+                        `User ${user.name} has no privileges to generate a code for the stage ${payload.stageId} and group ${payload.groupId}`
                     )
                 })
                 .then((code) => fn(null, code))
@@ -532,7 +532,7 @@ const handleSocketClientConnection = async (
                         return distributor.resetInviteCode(stage._id, new ObjectId(payload.groupId))
                     }
                     throw new Error(
-                        `User ${user.name} has no privileges to generate a code for this stage`
+                        `User ${user.name} has no privileges to generate a code for the stage ${payload.stageId} and group ${payload.groupId}`
                     )
                 })
                 .then((code) => fn(null, code))
