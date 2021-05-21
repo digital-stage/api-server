@@ -929,7 +929,6 @@ class Distributor extends EventEmitter.EventEmitter {
                     $setOnInsert: {
                         stageId,
                         groupId,
-                        code,
                     },
                 },
                 { upsert: true }
