@@ -30,6 +30,7 @@ import {
     DefaultThreeDimensionalProperties,
     DefaultVolumeProperties,
 } from '@digitalstage/api-types'
+import { nanoid } from 'nanoid'
 import { DEBUG_EVENTS, DEBUG_PAYLOAD } from '../env'
 import useLogger from '../useLogger'
 import generateColor from '../utils/generateColor'
@@ -56,6 +57,7 @@ export enum Collections {
     AUDIO_TRACKS = 'a',
     CUSTOM_AUDIO_TRACK_POSITIONS = 'c_r_ap_p',
     CUSTOM_AUDIO_TRACK_VOLUMES = 'c_r_ap_v',
+    INVITE_LINKS = 'i',
 }
 
 ObjectId.cacheHexString = true
@@ -877,6 +879,57 @@ class Distributor extends EventEmitter.EventEmitter {
             })
 
     /* STAGE */
+    encodeInviteCode = (stageId: ObjectId, groupId: ObjectId): Promise<string> => {
+        return this._db
+            .collection<{ stageId: ObjectId; groupId: ObjectId; code: string }>(
+                Collections.INVITE_LINKS
+            )
+            .findOne({
+                stageId,
+                groupId,
+            })
+            .then(async (result) => {
+                if (result) {
+                    return result.code
+                }
+                // Generate short UUID
+                let isUnique = false
+                let code: string
+                do {
+                    code = nanoid(4)
+                    // eslint-disable-next-line no-await-in-loop
+                    const existingEntry = await this._db
+                        .collection<{
+                            _id: ObjectId
+                            stageId: ObjectId
+                            groupId: ObjectId
+                            code: string
+                        }>(Collections.INVITE_LINKS)
+                        .findOne({ code })
+                    isUnique = !existingEntry
+                } while (!isUnique)
+                return this._db
+                    .collection<{ stageId: ObjectId; groupId: ObjectId; code: string }>(
+                        Collections.INVITE_LINKS
+                    )
+                    .insertOne({
+                        stageId,
+                        groupId,
+                        code,
+                    })
+                    .then(() => code)
+            })
+    }
+
+    decodeInviteCode = (
+        code: string
+    ): Promise<{ stageId: ObjectId; groupId: ObjectId; code: string }> =>
+        this._db
+            .collection<{ stageId: ObjectId; groupId: ObjectId; code: string }>(
+                Collections.INVITE_LINKS
+            )
+            .findOne({ code })
+
     createStage = (initialStage: Partial<Omit<Stage<ObjectId>, '_id'>>): Promise<Stage<ObjectId>> =>
         this._db
             .collection<Stage<ObjectId>>(Collections.STAGES)

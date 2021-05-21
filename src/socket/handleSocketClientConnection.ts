@@ -493,6 +493,41 @@ const handleSocketClientConnection = async (
     )
     // STAGE
     socket.on(
+        ClientDeviceEvents.EncodeInviteCode,
+        (
+            payload: ClientDevicePayloads.EncodeInviteCode,
+            fn: (error: string | null, code?: string) => void
+        ) =>
+            distributor
+                .encodeInviteCode(new ObjectId(payload.stageId), new ObjectId(payload.groupId))
+                .then((code) => fn(null, code))
+                .catch((e) => {
+                    if (fn) {
+                        fn(e.message)
+                    }
+                    error(e)
+                })
+    )
+    socket.on(
+        ClientDeviceEvents.DecodeInviteCode,
+        (
+            payload: ClientDevicePayloads.DecodeInviteCode,
+            fn: (
+                error: string | null,
+                result?: { stageId: ObjectId; groupId: ObjectId; code: string }
+            ) => void
+        ) =>
+            distributor
+                .decodeInviteCode(payload)
+                .then((result) => fn(null, result))
+                .catch((e) => {
+                    if (fn) {
+                        fn(e.message)
+                    }
+                    error(e)
+                })
+    )
+    socket.on(
         ClientDeviceEvents.CreateStage,
         (
             payload: ClientDevicePayloads.CreateStage,
