@@ -1,0 +1,22 @@
+enum Collections {
+    ROUTERS = 'r',
+    USERS = 'u',
+    DEVICES = 'd',
+    SOUND_CARDS = 'sc',
+    STAGES = 's',
+    GROUPS = 'g',
+    CUSTOM_GROUP_POSITIONS = 'c_g_p',
+    CUSTOM_GROUP_VOLUMES = 'c_g_v',
+    STAGE_MEMBERS = 'sm',
+    CUSTOM_STAGE_MEMBER_POSITIONS = 'c_sm_p',
+    CUSTOM_STAGE_MEMBER_VOLUMES = 'c_sm_v',
+    STAGE_DEVICES = 'sd',
+    CUSTOM_STAGE_DEVICE_POSITIONS = 'c_sd_p',
+    CUSTOM_STAGE_DEVICE_VOLUMES = 'c_sd_v',
+    VIDEO_TRACKS = 'v',
+    AUDIO_TRACKS = 'a',
+    CUSTOM_AUDIO_TRACK_POSITIONS = 'c_r_ap_p',
+    CUSTOM_AUDIO_TRACK_VOLUMES = 'c_r_ap_v',
+    INVITE_LINKS = 'i',
+}
+export default Collections
