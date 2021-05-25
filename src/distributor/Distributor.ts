@@ -1953,9 +1953,10 @@ class Distributor extends EventEmitter.EventEmitter {
                 {
                     $set: update,
                 },
-                { upsert: false, projection: { _id: 1 } }
+                { projection: { _id: 1 } }
             )
             .then((result) => {
+                console.log(result)
                 if (result.value) {
                     // Return updated document
                     console.log('CUSTOM WAS EXISTING ALREADY')
