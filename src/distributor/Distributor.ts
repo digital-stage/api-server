@@ -2140,8 +2140,8 @@ class Distributor extends EventEmitter.EventEmitter {
         update: Partial<ThreeDimensionalProperties>
     ): Promise<void> =>
         this._db
-            .collection<CustomStageMemberPosition<ObjectId>>(
-                Collections.CUSTOM_STAGE_MEMBER_POSITIONS
+            .collection<CustomStageDevicePosition<ObjectId>>(
+                Collections.CUSTOM_STAGE_DEVICE_POSITIONS
             )
             .findOneAndUpdate(
                 { userId, stageDeviceId, deviceId },
@@ -2157,10 +2157,10 @@ class Distributor extends EventEmitter.EventEmitter {
                         ...update,
                         _id: result.value._id,
                     }
-                    this.emit(ServerDeviceEvents.CustomStageMemberPositionChanged, payload)
+                    this.emit(ServerDeviceEvents.CustomStageDevicePositionChanged, payload)
                     return this.sendToUser(
                         userId,
-                        ServerDeviceEvents.CustomStageMemberPositionChanged,
+                        ServerDeviceEvents.CustomStageDevicePositionChanged,
                         payload
                     )
                 }
@@ -2212,10 +2212,10 @@ class Distributor extends EventEmitter.EventEmitter {
                 )
             })
 
-    readCustomStageDevicePosition = (id: ObjectId): Promise<CustomStageMemberPosition<ObjectId>> =>
+    readCustomStageDevicePosition = (id: ObjectId): Promise<CustomStageDevicePosition<ObjectId>> =>
         this._db
-            .collection<CustomStageMemberPosition<ObjectId>>(
-                Collections.CUSTOM_STAGE_MEMBER_POSITIONS
+            .collection<CustomStageDevicePosition<ObjectId>>(
+                Collections.CUSTOM_STAGE_DEVICE_POSITIONS
             )
             .findOne({ _id: id })
 
@@ -2244,7 +2244,7 @@ class Distributor extends EventEmitter.EventEmitter {
         update: { volume?: number; muted?: boolean }
     ): Promise<void> =>
         this._db
-            .collection<CustomStageMemberVolume<ObjectId>>(Collections.CUSTOM_STAGE_DEVICE_VOLUMES)
+            .collection<CustomStageDeviceVolume<ObjectId>>(Collections.CUSTOM_STAGE_DEVICE_VOLUMES)
             .findOneAndUpdate(
                 { userId, stageDeviceId, deviceId },
                 {
