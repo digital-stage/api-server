@@ -601,13 +601,13 @@ const handleSocketClientConnection = async (
         ClientDeviceEvents.ChangeStage,
         (payload: ClientDevicePayloads.ChangeStage, fn: (error: string | null) => void) => {
             trace(`${user.name}: ${ClientDeviceEvents.ChangeStage}(${JSON.stringify(payload)})`)
-            const { _id, ...data } = payload
+            const { _id, videoRouter, audioRouter, ...safePayload } = payload
             const id = new ObjectId(_id)
             return distributor
                 .readAdministratedStage(user._id, id)
                 .then((stage) => {
                     if (stage) {
-                        return distributor.updateStage(id, data)
+                        return distributor.updateStage(id, safePayload)
                     }
                     throw new Error(`User ${user.name} has no privileges to update the stage ${id}`)
                 })
@@ -657,13 +657,14 @@ const handleSocketClientConnection = async (
             fn?: (error: string | null, group?: Group<ObjectId>) => void
         ) => {
             trace(`${user.name}: ${ClientDeviceEvents.CreateGroup}(${JSON.stringify(payload)})`)
-            const stageId = new ObjectId(payload.stageId)
+            const { stageId: rawStageId, _id, ...safePayload } = payload as any
+            const stageId = new ObjectId(rawStageId)
             distributor
                 .readAdministratedStage(user._id, stageId)
                 .then((stage) => {
                     if (stage) {
                         return distributor.createGroup({
-                            name: payload.name,
+                            name: 'Unnamed group',
                             description: '',
                             directivity: 'omni',
                             x: 0,
@@ -675,7 +676,7 @@ const handleSocketClientConnection = async (
                             iconUrl: null,
                             volume: 1,
                             muted: false,
-                            ...payload,
+                            ...safePayload,
                             stageId,
                         })
                     }
@@ -781,10 +782,14 @@ const handleSocketClientConnection = async (
                     payload
                 )})`
             )
-            const groupId = new ObjectId(payload.groupId)
-            const deviceId = new ObjectId(payload.deviceId)
+            const { groupId, deviceId, x, y, z, rY, rZ, rX, directivity } = payload
             return distributor
-                .upsertCustomGroupPosition(user._id, groupId, deviceId, payload)
+                .upsertCustomGroupPosition(
+                    user._id,
+                    new ObjectId(groupId),
+                    new ObjectId(deviceId),
+                    { x, y, z, rY, rZ, rX, directivity }
+                )
                 .then(() => {
                     if (fn) {
                         return fn(null)
@@ -810,10 +815,12 @@ const handleSocketClientConnection = async (
                     payload
                 )})`
             )
-            const groupId = new ObjectId(payload.groupId)
-            const deviceId = new ObjectId(payload.deviceId)
+            const { groupId, deviceId, volume, muted } = payload
             return distributor
-                .upsertCustomGroupVolume(user._id, groupId, deviceId, payload)
+                .upsertCustomGroupVolume(user._id, new ObjectId(groupId), new ObjectId(deviceId), {
+                    volume,
+                    muted,
+                })
                 .then(() => {
                     if (fn) {
                         return fn(null)
@@ -995,10 +1002,14 @@ const handleSocketClientConnection = async (
                     payload
                 )})`
             )
-            const stageMemberId = new ObjectId(payload.stageMemberId)
-            const deviceId = new ObjectId(payload.deviceId)
+            const { deviceId, stageMemberId, x, y, z, rX, rY, rZ, directivity } = payload
             return distributor
-                .upsertCustomStageMemberPosition(user._id, stageMemberId, deviceId, payload)
+                .upsertCustomStageMemberPosition(
+                    user._id,
+                    new ObjectId(stageMemberId),
+                    new ObjectId(deviceId),
+                    { x, y, z, rY, rZ, rX, directivity }
+                )
                 .then(() => {
                     if (fn) {
                         return fn(null)
@@ -1024,10 +1035,14 @@ const handleSocketClientConnection = async (
                     payload
                 )})`
             )
-            const stageMemberId = new ObjectId(payload.stageMemberId)
-            const deviceId = new ObjectId(payload.deviceId)
+            const { stageMemberId, deviceId, volume, muted } = payload
             return distributor
-                .upsertCustomStageMemberVolume(user._id, stageMemberId, deviceId, payload)
+                .upsertCustomStageMemberVolume(
+                    user._id,
+                    new ObjectId(stageMemberId),
+                    new ObjectId(deviceId),
+                    { volume, muted }
+                )
                 .then(() => {
                     if (fn) {
                         return fn(null)
@@ -1210,10 +1225,14 @@ const handleSocketClientConnection = async (
                     payload
                 )})`
             )
-            const stageDeviceId = new ObjectId(payload.stageDeviceId)
-            const deviceId = new ObjectId(payload.deviceId)
+            const { deviceId, stageDeviceId, x, y, z, rX, rY, rZ, directivity } = payload
             return distributor
-                .upsertCustomStageDevicePosition(user._id, stageDeviceId, deviceId, payload)
+                .upsertCustomStageDevicePosition(
+                    user._id,
+                    new ObjectId(stageDeviceId),
+                    new ObjectId(deviceId),
+                    { x, y, z, rY, rZ, rX, directivity }
+                )
                 .then(() => {
                     if (fn) {
                         return fn(null)
@@ -1239,10 +1258,17 @@ const handleSocketClientConnection = async (
                     payload
                 )})`
             )
-            const stageDeviceId = new ObjectId(payload.stageDeviceId)
-            const deviceId = new ObjectId(payload.deviceId)
+            const { stageDeviceId, deviceId, volume, muted } = payload
             return distributor
-                .upsertCustomStageDeviceVolume(user._id, stageDeviceId, deviceId, payload)
+                .upsertCustomStageDeviceVolume(
+                    user._id,
+                    new ObjectId(stageDeviceId),
+                    new ObjectId(deviceId),
+                    {
+                        volume,
+                        muted,
+                    }
+                )
                 .then(() => {
                     if (fn) {
                         return fn(null)
@@ -1343,10 +1369,14 @@ const handleSocketClientConnection = async (
             fn?: (error: string | null) => void
         ) => {
             trace(`${user.name}: ${ClientDeviceEvents.SetCustomAudioTrackPosition}(${payload})`)
-            const audioTrackId = new ObjectId(payload.audioTrackId)
-            const deviceId = new ObjectId(payload.deviceId)
+            const { audioTrackId, deviceId, x, y, z, rX, rY, rZ, directivity } = payload
             return distributor
-                .upsertCustomAudioTrackPosition(user._id, audioTrackId, deviceId, payload)
+                .upsertCustomAudioTrackPosition(
+                    user._id,
+                    new ObjectId(audioTrackId),
+                    new ObjectId(deviceId),
+                    { x, y, z, rX, rY, rZ, directivity }
+                )
                 .then(() => {
                     if (fn) {
                         return fn(null)
@@ -1372,10 +1402,14 @@ const handleSocketClientConnection = async (
                     payload
                 )})`
             )
-            const audioTrackId = new ObjectId(payload.audioTrackId)
-            const deviceId = new ObjectId(payload.deviceId)
+            const { audioTrackId, deviceId, volume, muted } = payload
             return distributor
-                .upsertCustomAudioTrackVolume(user._id, audioTrackId, deviceId, payload)
+                .upsertCustomAudioTrackVolume(
+                    user._id,
+                    new ObjectId(audioTrackId),
+                    new ObjectId(deviceId),
+                    { volume, muted }
+                )
                 .then(() => {
                     if (fn) {
                         return fn(null)

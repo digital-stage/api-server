@@ -1948,31 +1948,28 @@ class Distributor extends EventEmitter.EventEmitter {
             .collection<CustomStageMemberPosition<ObjectId>>(
                 Collections.CUSTOM_STAGE_MEMBER_POSITIONS
             )
-            .findOne({ userId, stageMemberId, deviceId }, { projection: { _id: 1 } })
+            .findOneAndUpdate(
+                { userId, stageMemberId, deviceId },
+                {
+                    $set: update,
+                },
+                { projection: { _id: 1 } }
+            )
             .then((result) => {
-                if (result) {
-                    console.log('CUSTOM WAS EXISTING')
-                    return this._db
-                        .collection<CustomStageMemberPosition<ObjectId>>(
-                            Collections.CUSTOM_STAGE_MEMBER_POSITIONS
-                        )
-                        .updateOne({ _id: result._id }, { $set: update })
-                        .then(() => {
-                            // Return updated document
-                            const payload = {
-                                ...update,
-                                _id: result._id,
-                            }
-                            this.emit(ServerDeviceEvents.CustomStageMemberPositionChanged, payload)
-                            return this.sendToUser(
-                                userId,
-                                ServerDeviceEvents.CustomStageMemberPositionChanged,
-                                payload
-                            )
-                        })
+                if (result.value) {
+                    // Return updated document
+                    const payload = {
+                        ...update,
+                        _id: result.value._id,
+                    }
+                    this.emit(ServerDeviceEvents.CustomStageMemberPositionChanged, payload)
+                    return this.sendToUser(
+                        userId,
+                        ServerDeviceEvents.CustomStageMemberPositionChanged,
+                        payload
+                    )
                 }
                 // Custom entry not available yet, we have to create it
-                console.log('CUSTOM WAS NOT EXISTING YET')
                 return this.readStageMember(stageMemberId)
                     .then(
                         (stageMember): Omit<CustomStageMemberPosition<ObjectId>, '_id'> => ({
