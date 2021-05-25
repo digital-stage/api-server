@@ -1938,6 +1938,7 @@ class Distributor extends EventEmitter.EventEmitter {
             })
     }
 
+    // BIG TODO: REPLACE ALL findAndUpdate, since they won't return values when no update has been done...
     upsertCustomStageMemberPosition = (
         userId: ObjectId,
         stageMemberId: ObjectId,
