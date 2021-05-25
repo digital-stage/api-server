@@ -1959,10 +1959,9 @@ class Distributor extends EventEmitter.EventEmitter {
                         .updateOne({ _id: result._id }, { $set: update })
                         .then(() => {
                             // Return updated document
-                            console.log('CUSTOM WAS EXISTING ALREADY')
                             const payload = {
                                 ...update,
-                                _id: result.value._id,
+                                _id: result._id,
                             }
                             this.emit(ServerDeviceEvents.CustomStageMemberPositionChanged, payload)
                             return this.sendToUser(
