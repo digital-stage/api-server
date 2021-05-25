@@ -1958,6 +1958,7 @@ class Distributor extends EventEmitter.EventEmitter {
             .then((result) => {
                 if (result.value) {
                     // Return updated document
+                    console.log('CUSTOM WAS EXISTING ALREADY')
                     const payload = {
                         ...update,
                         _id: result.value._id,
@@ -1970,6 +1971,7 @@ class Distributor extends EventEmitter.EventEmitter {
                     )
                 }
                 // Custom entry not available yet, we have to create it
+                console.log('CUSTOM WAS NOT EXISTING YET')
 
                 return this.readStageMember(stageMemberId)
                     .then(
