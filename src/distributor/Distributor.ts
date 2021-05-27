@@ -2351,8 +2351,8 @@ class Distributor extends EventEmitter.EventEmitter {
                     // Return updated document
                     const payload = {
                         ...update,
-                        _id: result.value._id,
-                    }
+                        _id: result.value._id as any,
+                    } as ServerDevicePayloads.CustomAudioTrackPositionChanged
                     this.emit(ServerDeviceEvents.CustomAudioTrackPositionChanged, payload)
                     return this.sendToUser(
                         userId,
@@ -2374,10 +2374,10 @@ class Distributor extends EventEmitter.EventEmitter {
                                 rZ: remoteAudioTrack.rZ,
                                 directivity: remoteAudioTrack.directivity,
                                 ...update,
-                                stageId: remoteAudioTrack.stageId,
-                                deviceId,
                                 userId,
+                                stageId: remoteAudioTrack.stageId,
                                 audioTrackId,
+                                deviceId,
                             })
                         )
                         .then((initial) =>
