@@ -38,10 +38,10 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@digitalstage/api-types@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@digitalstage/api-types/-/api-types-0.1.0.tgz#c7dd1dbe7483d408d99d71f9622e13bf693bbd7a"
-  integrity sha512-3rBqH2eGtHmApT5Sky2vG5H/RuWB6D5kyyaAI0ldjySCtC3I5K8/hyLEbx51ULaPK4f2I9JEqGxi1mbOzeHu0Q==
+"@digitalstage/api-types@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@digitalstage/api-types/-/api-types-0.2.4.tgz#d484eb4ab6cc4a9ad859f27ad8102723715ea4a2"
+  integrity sha512-mDrgR8CxNAFtjdbL3tFLfxlA+6oXsxeOOPSyFXLzyRv0jS/9AAJ+1UZsXENw1HRrEUPoteVJPlsmNh5WTSZ7Jw==
 
 "@eslint/eslintrc@^0.4.2":
   version "0.4.2"
@@ -2747,10 +2747,10 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typescript@^4.3.3:
-  version "4.3.3"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.3.tgz#5401db69bd3203daf1851a1a74d199cb3112c11a"
-  integrity sha512-rUvLW0WtF7PF2b9yenwWUi9Da9euvDRhmH7BLyBG4DCFfOJ850LGNknmRpp8Z8kXNUPObdZQEfKOiHtXuQHHKA==
+typescript@^4.3.4:
+  version "4.3.4"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.4.tgz#3f85b986945bcf31071decdd96cf8bfa65f9dcbc"
+  integrity sha512-uauPG7XZn9F/mo+7MrsRjyvbxFpzemRjKEZXS4AK83oP2KKOJPvb+9cO/gmnv8arWZvhnjVOXz7B49m1l0e9Ew==
 
 unbox-primitive@^1.0.1:
   version "1.0.1"
