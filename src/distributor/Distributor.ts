@@ -407,7 +407,7 @@ class Distributor extends EventEmitter.EventEmitter {
                     if (result.value.stageId) {
                         return this.sendToJoinedStageMembers(
                             result.value.stageId,
-                            ServerDeviceEvents.RemoteUserChanged,
+                            ServerDeviceEvents.UserChanged,
                             payload
                         )
                     }
@@ -436,7 +436,7 @@ class Distributor extends EventEmitter.EventEmitter {
                     if (result.value.stageId) {
                         return this.sendToJoinedStageMembers(
                             result.value.stageId,
-                            ServerDeviceEvents.RemoteUserChanged,
+                            ServerDeviceEvents.UserChanged,
                             payload
                         )
                     }
@@ -2784,7 +2784,7 @@ class Distributor extends EventEmitter.EventEmitter {
             .find({ stageId })
             .toArray()
         const stageMemberObjectIds = stageMembers.map((stageMember) => stageMember.userId)
-        const remoteUsers = await this._db
+        const users = await this._db
             .collection<User<ObjectId>>(Collections.USERS)
             .find({ _id: { $in: stageMemberObjectIds } })
             .toArray()
@@ -2855,7 +2855,7 @@ class Distributor extends EventEmitter.EventEmitter {
 
         if (skipStageAndGroups) {
             return {
-                remoteUsers,
+                users,
                 stageMembers,
                 customGroupVolumes,
                 customGroupPositions,
@@ -2871,7 +2871,7 @@ class Distributor extends EventEmitter.EventEmitter {
             }
         }
         return {
-            remoteUsers,
+            users,
             stage,
             groups,
             stageMembers,
