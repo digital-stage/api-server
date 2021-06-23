@@ -581,6 +581,10 @@ class Distributor extends EventEmitter.EventEmitter {
             .toArray()
     }
 
+    readDevice = (id: ObjectId): Promise<Device<ObjectId> | undefined> => {
+        return this._db.collection<Device<ObjectId>>(Collections.DEVICES).findOne({ _id: id })
+    }
+
     updateDevice(
         userId: ObjectId,
         id: ObjectId,

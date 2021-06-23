@@ -408,6 +408,33 @@ const handleSocketClientConnection = async (
                 })
         }
     )
+    socket.on(
+        ClientDeviceEvents.RemoveDevice,
+        (payload: ClientDevicePayloads.RemoveDevice, fn?: (error: string | null) => void) => {
+            trace(`${user.name}: ${ClientDeviceEvents.RemoveDevice}(${JSON.stringify(payload)})`)
+            const id = new ObjectId(payload)
+            return distributor
+                .readDevice(id)
+                .then((foundDevice) => {
+                    if (foundDevice && foundDevice.userId === user._id && !foundDevice.online) {
+                        return distributor.deleteDevice(id)
+                    }
+                    throw new Error('Not allowed')
+                })
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e) => {
+                    if (fn) {
+                        fn(e.message)
+                    }
+                    error(e)
+                })
+        }
+    )
     // Sound card
     socket.on(
         ClientDeviceEvents.SetSoundCard,
