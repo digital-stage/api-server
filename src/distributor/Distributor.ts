@@ -568,6 +568,12 @@ class Distributor extends EventEmitter.EventEmitter {
                 return this.renewOnlineStatus(init.userId).then(() => device)
             })
 
+    readDeviceByUser = (id: ObjectId, userId: ObjectId): Promise<Device<ObjectId> | undefined> => {
+        return this._db
+            .collection<Device<ObjectId>>(Collections.DEVICES)
+            .findOne({ _id: id, userId })
+    }
+
     readDevicesByUser = (userId: ObjectId): Promise<Device<ObjectId>[]> =>
         this._db.collection<Device<ObjectId>>(Collections.DEVICES).find({ userId }).toArray()
 
@@ -579,10 +585,6 @@ class Distributor extends EventEmitter.EventEmitter {
             .collection<Device<ObjectId>>(Collections.DEVICES)
             .find({ apiServer })
             .toArray()
-    }
-
-    readDevice = (id: ObjectId): Promise<Device<ObjectId> | undefined> => {
-        return this._db.collection<Device<ObjectId>>(Collections.DEVICES).findOne({ _id: id })
     }
 
     updateDevice(

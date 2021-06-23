@@ -414,12 +414,12 @@ const handleSocketClientConnection = async (
             trace(`${user.name}: ${ClientDeviceEvents.RemoveDevice}(${JSON.stringify(payload)})`)
             const id = new ObjectId(payload)
             return distributor
-                .readDevice(id)
+                .readDeviceByUser(id, user._id)
                 .then((foundDevice) => {
-                    if (foundDevice && foundDevice.userId === user._id && !foundDevice.online) {
+                    if (foundDevice) {
                         return distributor.deleteDevice(id)
                     }
-                    throw new Error('Not allowed')
+                    throw new Error('Not found or allowed')
                 })
                 .then(() => {
                     if (fn) {
