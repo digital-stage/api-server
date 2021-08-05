@@ -51,7 +51,7 @@
     "typescript": "^4.3.5"
   },
   "dependencies": {
-    "@digitalstage/api-types": "^0.3.4",
+    "@digitalstage/api-types": "^0.3.6",
     "@sentry/integrations": "^6.10.0",
     "@sentry/node": "^6.10.0",
     "@sentry/tracing": "^6.10.0",

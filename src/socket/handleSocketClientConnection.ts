@@ -1563,26 +1563,32 @@ const handleSocketClientConnection = async (
     )
 
     // P2P signaling
-    socket.on(ClientDeviceEvents.SendP2PAnswer, (payload: ClientDevicePayloads.SendP2PAnswer) => {
-        trace(
-            `${user.name}: ${ClientDeviceEvents.SendP2PAnswer} to stage device ${payload.stageDeviceId}`
-        )
+    socket.on(ClientDeviceEvents.SendP2POffer, (payload: ClientDevicePayloads.SendP2POffer) => {
+        trace(`${user.name}: ${ClientDeviceEvents.SendP2POffer} to stage device ${payload.to}`)
         return distributor.sendToStageDevice(
-            new ObjectId(payload.stageDeviceId),
+            new ObjectId(payload.to),
+            ServerDeviceEvents.P2POfferSent,
+            payload
+        )
+    })
+    socket.on(ClientDeviceEvents.SendP2PAnswer, (payload: ClientDevicePayloads.SendP2PAnswer) => {
+        trace(`${user.name}: ${ClientDeviceEvents.SendP2PAnswer} to stage device ${payload.to}`)
+        return distributor.sendToStageDevice(
+            new ObjectId(payload.to),
             ServerDeviceEvents.P2PAnswerSent,
-            payload.answer
+            payload
         )
     })
     socket.on(
         ClientDeviceEvents.SendIceCandidate,
         (payload: ClientDevicePayloads.SendIceCandidate) => {
             trace(
-                `${user.name}: ${ClientDeviceEvents.SendIceCandidate} to stage device ${payload.stageDeviceId}`
+                `${user.name}: ${ClientDeviceEvents.SendIceCandidate} to stage device ${payload.to}`
             )
             return distributor.sendToStageDevice(
-                new ObjectId(payload.stageDeviceId),
+                new ObjectId(payload.to),
                 ServerDeviceEvents.IceCandidateSent,
-                payload.iceCandidate
+                payload
             )
         }
     )

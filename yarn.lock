@@ -38,10 +38,10 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@digitalstage/api-types@^0.3.4":
-  version "0.3.4"
-  resolved "https://registry.yarnpkg.com/@digitalstage/api-types/-/api-types-0.3.4.tgz#498ab814e12b9a6999c219064f392ad4764ccb81"
-  integrity sha512-+h/NVjPmJeZMM7ZLwO0FauSejo3uXGFoQTaJT0hXjEaRvyIK4pgkuGKnv3QoCLt8txaiCN7RuVz8W0wYH20KQQ==
+"@digitalstage/api-types@^0.3.6":
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/@digitalstage/api-types/-/api-types-0.3.6.tgz#164d7419e8e25649b277435dd8ef4701d6dca4fc"
+  integrity sha512-M3DIwO62gtGZEyFmzGBzGyFSlH77u0umnuyOnvu+mURZ54joNf+B56U+9n1iESPgMTHivAUMlnTjh+1iWtKj8A==
 
 "@eslint/eslintrc@^0.4.3":
   version "0.4.3"
