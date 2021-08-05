@@ -35,7 +35,6 @@ const handleSocketClientConnection = async (
                     ...initialDevice,
                     online: true,
                     lastLoginAt: new Date(),
-                    socketId: socket.id,
                 })
                 device.online = true
             }
@@ -45,9 +44,9 @@ const handleSocketClientConnection = async (
                 ...initialDevice,
                 userId: user._id,
                 online: true,
-                socketId: socket.id,
             })
         }
+        socket.join(device._id.toHexString())
 
         socket.on('disconnect', () => {
             // TODO: Remove all tracks associated with this device!
