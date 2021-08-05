@@ -192,26 +192,28 @@ class Distributor extends EventEmitter.EventEmitter {
     createRouter = (initial: Partial<Router<ObjectId>>): Promise<Router<ObjectId>> => {
         trace(`createRouter(): Creating router with initial data: ${initial}`)
         const { _id, ...initialWithoutId } = initial
+        const doc = {
+            countryCode: 'GLOBAL',
+            city: 'Unknown city',
+            types: {},
+            position: {
+                lat: 0,
+                lng: 0,
+            },
+            apiServer: this._apiServer,
+            ...initialWithoutId,
+            _id: undefined,
+        }
         return this._db
             .collection<Router<ObjectId>>(Collections.ROUTERS)
-            .insertOne({
-                countryCode: 'GLOBAL',
-                city: 'Unknown city',
-                types: {},
-                position: {
-                    lat: 0,
-                    lng: 0,
-                },
-                apiServer: this._apiServer,
-                ...initialWithoutId,
-                _id: undefined,
-            })
-            .then((result) => {
-                if (result.ops.length > 0) {
-                    return result.ops[0]
-                }
-                throw new Error('Could not create Router')
-            })
+            .insertOne(doc)
+            .then(
+                (result) =>
+                    ({
+                        ...doc,
+                        _id: result.insertedId,
+                    } as Router<ObjectId>)
+            )
             .then((router) => {
                 this.emit(ServerDeviceEvents.RouterAdded, router)
                 this.sendToAll(ServerDeviceEvents.RouterAdded, router)
@@ -368,16 +370,23 @@ class Distributor extends EventEmitter.EventEmitter {
     createUser(
         initial: Omit<User<ObjectId>, '_id' | 'stageId' | 'stageMemberId' | 'groupId'>
     ): Promise<User<ObjectId>> {
+        const doc = {
+            ...initial,
+            _id: undefined,
+            groupId: null,
+            stageId: null,
+            stageMemberId: null,
+        }
         return this._db
             .collection<User<ObjectId>>(Collections.USERS)
-            .insertOne({
-                ...initial,
-                _id: undefined,
-                groupId: null,
-                stageId: null,
-                stageMemberId: null,
-            })
-            .then((result) => result.ops[0])
+            .insertOne(doc)
+            .then(
+                (result) =>
+                    ({
+                        ...doc,
+                        _id: result.insertedId,
+                    } as User<ObjectId>)
+            )
             .then((user) => {
                 this.emit(ServerDeviceEvents.UserAdded, user)
                 return user
@@ -484,38 +493,49 @@ class Distributor extends EventEmitter.EventEmitter {
             )
 
     /* DEVICE */
-    createDevice = (init: Omit<Device<ObjectId>, '_id'>): Promise<Device<ObjectId>> =>
-        this._db
+    createDevice = (init: Omit<Device<ObjectId>, '_id'>): Promise<Device<ObjectId>> => {
+        if (!init.type) {
+            throw new Error('Missing type of device')
+        }
+        const doc: Device<ObjectId> & { _id?: ObjectId } = {
+            uuid: null,
+            name: '',
+            requestSession: false,
+            canAudio: false,
+            canVideo: false,
+            receiveAudio: false,
+            receiveVideo: false,
+            sendAudio: false,
+            sendVideo: false,
+            ovRawMode: false,
+            ovRenderISM: false,
+            ovP2p: true,
+            ovReceiverType: 'ortf',
+            ovRenderReverb: true,
+            ovReverbGain: 0.4,
+            canOv: false,
+            volume: 1,
+            egoGain: 1,
+            soundCardId: null,
+            ...init,
+            type: init.type,
+            _id: undefined,
+            online: true,
+            userId: init.userId,
+            lastLoginAt: new Date(),
+            createdAt: new Date(),
+            apiServer: this._apiServer,
+        }
+        return this._db
             .collection<Device<ObjectId>>(Collections.DEVICES)
-            .insertOne({
-                uuid: null,
-                type: 'unknown',
-                requestSession: false,
-                canAudio: false,
-                canVideo: false,
-                receiveAudio: false,
-                receiveVideo: false,
-                sendAudio: false,
-                sendVideo: false,
-                ovRawMode: false,
-                ovRenderISM: false,
-                ovP2p: true,
-                ovReceiverType: 'ortf',
-                ovRenderReverb: true,
-                ovReverbGain: 0.4,
-                canOv: false,
-                volume: 1,
-                egoGain: 1,
-                soundCardId: null,
-                ...init,
-                _id: undefined,
-                online: true,
-                userId: init.userId,
-                lastLoginAt: new Date(),
-                createdAt: new Date(),
-                apiServer: this._apiServer,
-            } as any)
-            .then((result) => result.ops[0])
+            .insertOne(doc)
+            .then(
+                (result) =>
+                    ({
+                        ...doc,
+                        _id: result.insertedId,
+                    } as Device<ObjectId>)
+            )
             .then(async (device) => {
                 const stageMembers = await this._db
                     .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
@@ -567,6 +587,11 @@ class Distributor extends EventEmitter.EventEmitter {
                 this.sendToUser(init.userId, ServerDeviceEvents.DeviceAdded, device)
                 return this.renewOnlineStatus(init.userId).then(() => device)
             })
+    }
+
+    readDevice = (id: ObjectId) => {
+        return this._db.collection<Device<ObjectId>>(Collections.DEVICES).findOne({ _id: id })
+    }
 
     readDeviceByUser = (id: ObjectId, userId: ObjectId): Promise<Device<ObjectId> | undefined> => {
         return this._db
@@ -764,27 +789,34 @@ class Distributor extends EventEmitter.EventEmitter {
                     return result.value._id
                 }
                 if (result.ok) {
+                    const doc = {
+                        sampleRate: 48000,
+                        sampleRates: [48000],
+                        label: uuid,
+                        isDefault: false,
+                        online: false,
+                        drivers: [],
+                        driver: null,
+                        inputChannels: {},
+                        outputChannels: {},
+                        periodSize: 96,
+                        numPeriods: 2,
+                        softwareLatency: null,
+                        ...update,
+                        userId,
+                        deviceId,
+                        uuid,
+                    }
                     return this._db
                         .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
-                        .insertOne({
-                            sampleRate: 48000,
-                            sampleRates: [48000],
-                            label: uuid,
-                            isDefault: false,
-                            online: false,
-                            drivers: [],
-                            driver: null,
-                            inputChannels: {},
-                            outputChannels: {},
-                            periodSize: 96,
-                            numPeriods: 2,
-                            softwareLatency: null,
-                            ...update,
-                            userId,
-                            deviceId,
-                            uuid,
-                        })
-                        .then((insertResult) => insertResult.ops[0] as SoundCard<ObjectId>)
+                        .insertOne(doc)
+                        .then(
+                            (r) =>
+                                ({
+                                    ...doc,
+                                    _id: r.insertedId,
+                                } as SoundCard<ObjectId>)
+                        )
                         .then((soundCard) => {
                             this.sendToUser(userId, ServerDeviceEvents.SoundCardAdded, soundCard)
                             return soundCard._id
@@ -930,35 +962,41 @@ class Distributor extends EventEmitter.EventEmitter {
             )
             .findOne({ code })
 
-    createStage = (initialStage: Partial<Omit<Stage<ObjectId>, '_id'>>): Promise<Stage<ObjectId>> =>
-        this._db
+    createStage = (
+        initialStage: Partial<Omit<Stage<ObjectId>, '_id'>>
+    ): Promise<Stage<ObjectId>> => {
+        const doc = {
+            name: '',
+            password: null,
+            description: '',
+            admins: [],
+            soundEditors: [],
+            iconUrl: null,
+            videoType: 'mediasoup',
+            audioType: 'mediasoup',
+            width: 25,
+            length: 20,
+            height: 10,
+            reflection: 0.7,
+            absorption: 0.7,
+            preferredPosition: {
+                // Frankfurt
+                lat: 50.110924,
+                lng: 8.682127,
+            },
+            ...initialStage,
+            videoRouter: null,
+            audioRouter: null,
+            _id: undefined,
+        }
+        return this._db
             .collection<Stage<ObjectId>>(Collections.STAGES)
-            .insertOne({
-                name: '',
-                password: null,
-                description: '',
-                admins: [],
-                soundEditors: [],
-                iconUrl: null,
-                videoType: 'mediasoup',
-                audioType: 'mediasoup',
-                width: 25,
-                length: 20,
-                height: 10,
-                reflection: 0.7,
-                absorption: 0.7,
-                preferredPosition: {
-                    // Frankfurt
-                    lat: 50.110924,
-                    lng: 8.682127,
-                },
-                ...initialStage,
-                videoRouter: null,
-                audioRouter: null,
-                _id: undefined,
-            })
+            .insertOne(doc)
             .then((result) => {
-                const stage = result.ops[0] as Stage<ObjectId>
+                const stage = {
+                    ...doc,
+                    _id: result.insertedId,
+                } as Stage<ObjectId>
                 this.emit(
                     ServerDeviceEvents.StageAdded,
                     stage as unknown as ServerDevicePayloads.StageAdded
@@ -972,6 +1010,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 )
                 return this.assignRoutersToStage(stage).then(() => stage)
             })
+    }
 
     readStage = (id: ObjectId): Promise<Stage<ObjectId>> =>
         this._db.collection<Stage<ObjectId>>(Collections.STAGES).findOne({ _id: id })
@@ -1137,7 +1176,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 ...initial,
                 color,
             })
-            .then((result) => result.ops[0] as Group<ObjectId>)
+            .then((result) => ({ ...initial, color, _id: result.insertedId } as Group<ObjectId>))
             .then((group) => {
                 this.emit(ServerDeviceEvents.GroupAdded, group)
                 return this.sendToStage(group.stageId, ServerDeviceEvents.GroupAdded, group).then(
@@ -1242,7 +1281,13 @@ class Distributor extends EventEmitter.EventEmitter {
         return this._db
             .collection<StageMember<ObjectId>>(Collections.STAGE_MEMBERS)
             .insertOne(initial)
-            .then((result) => result.ops[0] as StageMember<ObjectId>)
+            .then(
+                (result) =>
+                    ({
+                        _id: result.insertedId,
+                        ...initial,
+                    } as StageMember<ObjectId>)
+            )
             .then((stageMember) => {
                 this.emit(ServerDeviceEvents.StageMemberAdded, stageMember)
                 // Create stage devices for all devices of this user
@@ -1404,7 +1449,9 @@ class Distributor extends EventEmitter.EventEmitter {
                 ...initial,
                 order,
             })
-            .then((result) => result.ops[0] as StageDevice<ObjectId>)
+            .then(
+                (result) => ({ ...initial, order, _id: result.insertedId } as StageDevice<ObjectId>)
+            )
             .then(async (stageDevice): Promise<StageDevice<ObjectId>> => {
                 this.emit(ServerDeviceEvents.StageDeviceAdded, stageDevice)
                 await this.sendToJoinedStageMembers(
@@ -1546,22 +1593,23 @@ class Distributor extends EventEmitter.EventEmitter {
 
     /* AUDIO TRACK */
     createAudioTrack(initial: Omit<AudioTrack<ObjectId>, '_id'>): Promise<AudioTrack<ObjectId>> {
+        const doc = {
+            ...DefaultVolumeProperties,
+            ...DefaultThreeDimensionalProperties,
+            ...initial,
+            localAudioTrackId: initial.localAudioTrackId,
+            userId: initial.userId,
+            deviceId: initial.deviceId,
+            stageId: initial.stageId,
+            stageMemberId: initial.stageMemberId,
+            stageDeviceId: initial.stageDeviceId,
+            type: initial.type,
+            _id: undefined,
+        }
         return this._db
             .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
-            .insertOne({
-                ...DefaultVolumeProperties,
-                ...DefaultThreeDimensionalProperties,
-                ...initial,
-                localAudioTrackId: initial.localAudioTrackId,
-                userId: initial.userId,
-                deviceId: initial.deviceId,
-                stageId: initial.stageId,
-                stageMemberId: initial.stageMemberId,
-                stageDeviceId: initial.stageDeviceId,
-                type: initial.type,
-                _id: undefined,
-            })
-            .then((result) => result.ops[0])
+            .insertOne(doc)
+            .then((result) => ({ ...doc, _id: result.insertedId } as AudioTrack<ObjectId>))
             .then((remoteAudioTrack) => {
                 this.emit(ServerDeviceEvents.AudioTrackAdded, remoteAudioTrack)
                 return this.sendToJoinedStageMembers(
@@ -1672,7 +1720,7 @@ class Distributor extends EventEmitter.EventEmitter {
         return this._db
             .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
             .insertOne(initialTrack as any)
-            .then((result) => result.ops[0])
+            .then((result) => ({ ...initialTrack, _id: result.insertedId } as VideoTrack<ObjectId>))
             .then((producer) => {
                 this.emit(ServerDeviceEvents.VideoTrackAdded, producer)
                 return this.sendToJoinedStageMembers(
@@ -1807,8 +1855,11 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                                 .insertOne(initial)
                                 .then((result2) => {
-                                    if (result2.result.ok) {
-                                        const payload = result2.ops[0]
+                                    if (result2.acknowledged) {
+                                        const payload = {
+                                            ...initial,
+                                            _id: result2.insertedId,
+                                        }
                                         this.emit(
                                             ServerDeviceEvents.CustomGroupPositionAdded,
                                             payload
@@ -1900,8 +1951,11 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                                 .insertOne(initial)
                                 .then((result2) => {
-                                    if (result2.result.ok) {
-                                        const payload = result2.ops[0]
+                                    if (result2.acknowledged) {
+                                        const payload = {
+                                            ...initial,
+                                            _id: result2.insertedId,
+                                        }
                                         this.emit(
                                             ServerDeviceEvents.CustomGroupVolumeAdded,
                                             payload
@@ -2000,8 +2054,11 @@ class Distributor extends EventEmitter.EventEmitter {
                             )
                             .insertOne(payload)
                             .then((response) => {
-                                if (response.result.ok) {
-                                    const payload2 = response.ops[0]
+                                if (response.acknowledged) {
+                                    const payload2 = {
+                                        ...payload,
+                                        _id: response.insertedId,
+                                    }
                                     this.emit(
                                         ServerDeviceEvents.CustomStageMemberPositionAdded,
                                         payload2
@@ -2093,8 +2150,11 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                                 .insertOne(initial)
                                 .then((response) => {
-                                    if (response.result.ok) {
-                                        const payload = response.ops[0]
+                                    if (response.acknowledged) {
+                                        const payload = {
+                                            ...initial,
+                                            _id: response.insertedId,
+                                        }
                                         this.emit(
                                             ServerDeviceEvents.CustomStageMemberVolumeAdded,
                                             response
@@ -2194,8 +2254,11 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                                 .insertOne(payload)
                                 .then((response) => {
-                                    if (response.result.ok) {
-                                        const payload2 = response.ops[0]
+                                    if (response.acknowledged) {
+                                        const payload2 = {
+                                            ...payload,
+                                            _id: response.insertedId,
+                                        }
                                         this.emit(
                                             ServerDeviceEvents.CustomStageDevicePositionAdded,
                                             payload2
@@ -2291,8 +2354,11 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                                 .insertOne(initial)
                                 .then((response) => {
-                                    if (response.result.ok) {
-                                        const payload = response.ops[0]
+                                    if (response.acknowledged) {
+                                        const payload = {
+                                            ...initial,
+                                            _id: response.insertedId,
+                                        }
                                         this.emit(
                                             ServerDeviceEvents.CustomStageDeviceVolumeAdded,
                                             response
@@ -2393,8 +2459,11 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                                 .insertOne(initial)
                                 .then((response) => {
-                                    if (response.result.ok) {
-                                        const payload = response.ops[0]
+                                    if (response.acknowledged) {
+                                        const payload = {
+                                            ...initial,
+                                            _id: response.insertedId,
+                                        }
                                         this.emit(
                                             ServerDeviceEvents.CustomAudioTrackPositionAdded,
                                             payload
@@ -2490,8 +2559,11 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                                 .insertOne(initial)
                                 .then((response) => {
-                                    if (response.result.ok) {
-                                        const payload = response.ops[0]
+                                    if (response.acknowledged) {
+                                        const payload = {
+                                            ...initial,
+                                            _id: response.insertedId,
+                                        }
                                         this.emit(
                                             ServerDeviceEvents.CustomAudioTrackVolumeAdded,
                                             payload
@@ -3073,6 +3145,26 @@ class Distributor extends EventEmitter.EventEmitter {
         }
         this._io.to(userId.toHexString(), event, payload)
     }
+
+    sendToStageDevice = (stageDeviceId: ObjectId, event: string, payload?: any): Promise<void> =>
+        this.readStageDevice(stageDeviceId)
+            .then((stageDevice) => this.readDevice(stageDevice.deviceId))
+            .then((device) => {
+                const socketId = device.socketId.toHexString()
+                if (DEBUG_EVENTS) {
+                    if (DEBUG_PAYLOAD) {
+                        trace(
+                            `SEND TO SINGLE SOCKET '${socketId}' ${event}: ${JSON.stringify(
+                                payload
+                            )}`
+                        )
+                    } else {
+                        trace(`SEND TO SINGLE SOCKET '${socketId}' ${event}`)
+                    }
+                }
+                this._io.to(socketId, event, payload)
+                return undefined
+            })
 
     sendToRouter = (routerId: ObjectId, event: string, payload?: any): void => {
         const groupId = routerId.toHexString()

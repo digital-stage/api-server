@@ -34,11 +34,8 @@ uws.get('/beat', (res) => {
 let mongoClient = new MongoClient(MONGO_URL, {
     sslValidate: !!MONGO_CA,
     sslCA: MONGO_CA,
-    poolSize: 10,
+    minPoolSize: 10,
     maxPoolSize: 100,
-    bufferMaxEntries: 0,
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
 })
 
 const start = async () => {

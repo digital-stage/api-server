@@ -35,6 +35,7 @@ const handleSocketClientConnection = async (
                     ...initialDevice,
                     online: true,
                     lastLoginAt: new Date(),
+                    socketId: socket.id,
                 })
                 device.online = true
             }
@@ -44,6 +45,7 @@ const handleSocketClientConnection = async (
                 ...initialDevice,
                 userId: user._id,
                 online: true,
+                socketId: socket.id,
             })
         }
 
@@ -1557,6 +1559,31 @@ const handleSocketClientConnection = async (
                     }
                     error(e)
                 })
+        }
+    )
+
+    // P2P signaling
+    socket.on(ClientDeviceEvents.SendP2PAnswer, (payload: ClientDevicePayloads.SendP2PAnswer) => {
+        trace(
+            `${user.name}: ${ClientDeviceEvents.SendP2PAnswer} to stage device ${payload.stageDeviceId}`
+        )
+        return distributor.sendToStageDevice(
+            new ObjectId(payload.stageDeviceId),
+            ServerDeviceEvents.P2PAnswerSent,
+            payload.answer
+        )
+    })
+    socket.on(
+        ClientDeviceEvents.SendIceCandidate,
+        (payload: ClientDevicePayloads.SendIceCandidate) => {
+            trace(
+                `${user.name}: ${ClientDeviceEvents.SendIceCandidate} to stage device ${payload.stageDeviceId}`
+            )
+            return distributor.sendToStageDevice(
+                new ObjectId(payload.stageDeviceId),
+                ServerDeviceEvents.IceCandidateSent,
+                payload.iceCandidate
+            )
         }
     )
 
