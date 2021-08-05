@@ -3150,19 +3150,18 @@ class Distributor extends EventEmitter.EventEmitter {
         this.readStageDevice(stageDeviceId)
             .then((stageDevice) => this.readDevice(stageDevice.deviceId))
             .then((device) => {
-                const socketId = device.socketId.toHexString()
                 if (DEBUG_EVENTS) {
                     if (DEBUG_PAYLOAD) {
                         trace(
-                            `SEND TO SINGLE SOCKET '${socketId}' ${event}: ${JSON.stringify(
+                            `SEND TO SINGLE SOCKET '${device.socketId}' ${event}: ${JSON.stringify(
                                 payload
                             )}`
                         )
                     } else {
-                        trace(`SEND TO SINGLE SOCKET '${socketId}' ${event}`)
+                        trace(`SEND TO SINGLE SOCKET '${device.socketId}' ${event}`)
                     }
                 }
-                this._io.to(socketId, event, payload)
+                this._io.to(device.socketId, event, payload)
                 return undefined
             })
 
