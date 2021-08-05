@@ -19,6 +19,8 @@ const getIP = (socket: ITeckosSocket): string => {
 const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket): void => {
     const { getUserByToken } = useAuth(distributor)
 
+    socket.setMaxListeners(0)
+
     socket.on(ClientDeviceEvents.ConnectAsRouter, (payload: Payloads.ConnectAsRouter) => {
         const { apiKey, router } = payload
         if (apiKey) {
