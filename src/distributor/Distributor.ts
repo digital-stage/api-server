@@ -1431,7 +1431,7 @@ class Distributor extends EventEmitter.EventEmitter {
             .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
             .find({ stageId: initial.stageId })
             .toArray()
-            .then((stageDevices) => {
+            .then((stageDevices: StageDevice<ObjectId>[]) => {
                 if (stageDevices.length > 0) {
                     for (let i = 0; i < 30; i += 1) {
                         if (!stageDevices.find((current) => current.order === i)) {
@@ -1443,12 +1443,14 @@ class Distributor extends EventEmitter.EventEmitter {
                 return 0
             })
         if (order === -1) throw new Error('No more members possible, max of 30 reached')
+        const doc = {
+            ...initial,
+            order,
+            _id: undefined,
+        } as StageDevice<ObjectId> & { _id?: ObjectId }
         return this._db
             .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
-            .insertOne({
-                ...initial,
-                order,
-            })
+            .insertOne(doc)
             .then(
                 (result) => ({ ...initial, order, _id: result.insertedId } as StageDevice<ObjectId>)
             )
