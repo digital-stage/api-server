@@ -662,10 +662,18 @@ class Distributor extends EventEmitter.EventEmitter {
                                     { projection: { _id: 1 } }
                                 )
                                 .then((stageDevice) => {
-                                    if (stageDevice)
-                                        this.updateStageDevice(stageDevice._id, {
-                                            active: update.online,
-                                        })
+                                    if (stageDevice) {
+                                        if (stageDevice.offer && !update.online) {
+                                            this.updateStageDevice(stageDevice._id, {
+                                                active: update.online,
+                                                offer: undefined,
+                                            })
+                                        } else {
+                                            this.updateStageDevice(stageDevice._id, {
+                                                active: update.online,
+                                            })
+                                        }
+                                    }
                                     return null
                                 })
                         }
