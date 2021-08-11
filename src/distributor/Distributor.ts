@@ -663,17 +663,16 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                                 .then((stageDevice) => {
                                     if (stageDevice) {
-                                        if (stageDevice.offer && !update.online) {
-                                            this.updateStageDevice(stageDevice._id, {
-                                                active: update.online,
-                                                offer: null,
-                                            })
-                                        } else {
-                                            this.updateStageDevice(stageDevice._id, {
-                                                active: update.online,
-                                                offer: stageDevice.offer ? null : undefined,
-                                            })
+                                        let stageDeviceUpdate: Partial<StageDevice<ObjectId>> = {
+                                            active: update.online,
                                         }
+                                        if (!update.online && stageDevice.offer) {
+                                            stageDeviceUpdate = {
+                                                ...stageDeviceUpdate,
+                                                offer: null,
+                                            }
+                                        }
+                                        this.updateStageDevice(stageDevice._id, stageDeviceUpdate)
                                     }
                                     return null
                                 })
