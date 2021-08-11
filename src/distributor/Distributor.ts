@@ -666,11 +666,12 @@ class Distributor extends EventEmitter.EventEmitter {
                                         if (stageDevice.offer && !update.online) {
                                             this.updateStageDevice(stageDevice._id, {
                                                 active: update.online,
-                                                offer: undefined,
+                                                offer: null,
                                             })
                                         } else {
                                             this.updateStageDevice(stageDevice._id, {
                                                 active: update.online,
+                                                offer: stageDevice.offer ? null : undefined,
                                             })
                                         }
                                     }
