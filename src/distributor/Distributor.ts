@@ -651,31 +651,40 @@ class Distributor extends EventEmitter.EventEmitter {
                                 )
                         }
                         // Also update stage device
-                        const stageId = await this.readUser(result.value.userId).then(
-                            (user) => user.stageId
-                        )
-                        if (stageId) {
+                        if (update.online) {
+                            const stageId = await this.readUser(result.value.userId).then(
+                                (user) => user.stageId
+                            )
+                            if (stageId) {
+                                await this._db
+                                    .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
+                                    .findOne(
+                                        { stageId, deviceId: result.value._id },
+                                        { projection: { _id: 1 } }
+                                    )
+                                    .then((stageDevice) => {
+                                        if (stageDevice) {
+                                            return this.updateStageDevice(stageDevice._id, {
+                                                active: true,
+                                            })
+                                        }
+                                        return null
+                                    })
+                            }
+                        } else {
+                            // Set all stage devices offline, equal to the current stage
                             await this._db
                                 .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
-                                .findOne(
-                                    { stageId, deviceId: result.value._id },
-                                    { projection: { _id: 1 } }
+                                .find({ deviceId: result.value._id }, { projection: { _id: 1 } })
+                                .toArray()
+                                .then((stageDevices: { _id: ObjectId }[]) =>
+                                    stageDevices.map((stageDevice) =>
+                                        this.updateStageDevice(stageDevice._id, {
+                                            active: false,
+                                            offer: null,
+                                        })
+                                    )
                                 )
-                                .then((stageDevice) => {
-                                    if (stageDevice) {
-                                        let stageDeviceUpdate: Partial<StageDevice<ObjectId>> = {
-                                            active: update.online,
-                                        }
-                                        if (!update.online && stageDevice.offer) {
-                                            stageDeviceUpdate = {
-                                                ...stageDeviceUpdate,
-                                                offer: null,
-                                            }
-                                        }
-                                        this.updateStageDevice(stageDevice._id, stageDeviceUpdate)
-                                    }
-                                    return null
-                                })
                         }
                     }
                 }
