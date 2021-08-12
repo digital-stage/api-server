@@ -1562,33 +1562,78 @@ const handleSocketClientConnection = async (
     )
 
     // P2P signaling
-    socket.on(ClientDeviceEvents.SendP2POffer, (payload: ClientDevicePayloads.SendP2POffer) => {
-        trace(`${user.name}: ${ClientDeviceEvents.SendP2POffer} to stage device ${payload.to}`)
-        return distributor.sendToStageDevice(
-            new ObjectId(payload.to),
-            ServerDeviceEvents.P2POfferSent,
-            payload
-        )
-    })
-    socket.on(ClientDeviceEvents.SendP2PAnswer, (payload: ClientDevicePayloads.SendP2PAnswer) => {
-        trace(`${user.name}: ${ClientDeviceEvents.SendP2PAnswer} to stage device ${payload.to}`)
-        return distributor.sendToStageDevice(
-            new ObjectId(payload.to),
-            ServerDeviceEvents.P2PAnswerSent,
-            payload
-        )
-    })
+    socket.on(
+        ClientDeviceEvents.SendP2POffer,
+        (payload: ClientDevicePayloads.SendP2POffer, fn?: (error: string | null) => void) => {
+            trace(`${user.name}: ${ClientDeviceEvents.SendP2POffer} to stage device ${payload.to}`)
+            return distributor
+                .sendToStageDevice(
+                    new ObjectId(payload.to),
+                    ServerDeviceEvents.P2POfferSent,
+                    payload
+                )
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e) => {
+                    if (fn) {
+                        fn(e)
+                    }
+                    error(e)
+                })
+        }
+    )
+    socket.on(
+        ClientDeviceEvents.SendP2PAnswer,
+        (payload: ClientDevicePayloads.SendP2PAnswer, fn?: (error: string | null) => void) => {
+            trace(`${user.name}: ${ClientDeviceEvents.SendP2PAnswer} to stage device ${payload.to}`)
+            return distributor
+                .sendToStageDevice(
+                    new ObjectId(payload.to),
+                    ServerDeviceEvents.P2PAnswerSent,
+                    payload
+                )
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e) => {
+                    if (fn) {
+                        fn(e)
+                    }
+                    error(e)
+                })
+        }
+    )
     socket.on(
         ClientDeviceEvents.SendIceCandidate,
-        (payload: ClientDevicePayloads.SendIceCandidate) => {
+        (payload: ClientDevicePayloads.SendIceCandidate, fn?: (error: string | null) => void) => {
             trace(
                 `${user.name}: ${ClientDeviceEvents.SendIceCandidate} to stage device ${payload.to}`
             )
-            return distributor.sendToStageDevice(
-                new ObjectId(payload.to),
-                ServerDeviceEvents.IceCandidateSent,
-                payload
-            )
+            return distributor
+                .sendToStageDevice(
+                    new ObjectId(payload.to),
+                    ServerDeviceEvents.IceCandidateSent,
+                    payload
+                )
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e) => {
+                    if (fn) {
+                        fn(e)
+                    }
+                    error(e)
+                })
         }
     )
 
