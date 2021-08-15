@@ -1507,7 +1507,7 @@ const handleSocketClientConnection = async (
         (payload: ClientDevicePayloads.JoinStage, fn?: (error?: string) => void) => {
             trace(`${user.name}: ${ClientDeviceEvents.JoinStage}`)
             const stageId = new ObjectId(payload.stageId)
-            const groupId = new ObjectId(payload.groupId)
+            const groupId = payload.groupId ? new ObjectId(payload.groupId) : undefined
             return distributor
                 .joinStage(user._id, stageId, groupId, payload.password)
                 .then(() => trace(`${user.name} joined stage ${stageId} and group ${groupId}`))

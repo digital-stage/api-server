@@ -2641,7 +2641,7 @@ class Distributor extends EventEmitter.EventEmitter {
     joinStage = async (
         userId: ObjectId,
         stageId: ObjectId,
-        groupId: ObjectId,
+        groupId?: ObjectId,
         password?: string
     ): Promise<void> => {
         const startTime = Date.now()
@@ -2665,6 +2665,9 @@ class Distributor extends EventEmitter.EventEmitter {
 
         const wasUserAlreadyInStage = stageMember !== null
         if (!wasUserAlreadyInStage) {
+            if (!groupId) {
+                throw new Error('Never assigned to this stage yet. Please specify the groupId!')
+            }
             stageMember = await this.createStageMember({
                 userId: user._id,
                 stageId: stage._id,
@@ -2674,14 +2677,20 @@ class Distributor extends EventEmitter.EventEmitter {
                 ...DefaultVolumeProperties,
                 ...DefaultThreeDimensionalProperties,
             })
-        } else if (!stageMember.groupId.equals(groupId) || !stageMember.active) {
+        } else if ((groupId && !stageMember.groupId.equals(groupId)) || !stageMember.active) {
             // Update stage member
             stageMember.active = true
-            stageMember.groupId = groupId
-            await this.updateStageMember(stageMember._id, {
-                groupId,
-                active: true,
-            })
+            if (groupId) {
+                stageMember.groupId = groupId
+                await this.updateStageMember(stageMember._id, {
+                    groupId,
+                    active: true,
+                })
+            } else {
+                await this.updateStageMember(stageMember._id, {
+                    active: true,
+                })
+            }
         }
         // Also create a custom stage member for the same user and mute it per default for all devices
         await this._db
