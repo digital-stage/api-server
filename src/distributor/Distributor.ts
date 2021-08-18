@@ -3087,9 +3087,12 @@ class Distributor extends EventEmitter.EventEmitter {
             .find({ stageId }, { projection: { userId: 1 } })
             .toArray()
             .then((stageMembers) => stageMembers.map((stageMember) => stageMember.userId))
-        unionWith<ObjectId>(adminIds, stageMemberIds, (prev, curr) => prev.equals(curr)).map(
-            (userId) => this.sendToUser(userId, event, payload)
+        const userIds = unionWith<ObjectId>(adminIds, stageMemberIds, (prev, curr) =>
+            prev.equals(curr)
         )
+        console.log('Send to stage')
+        console.log(userIds)
+        userIds.map((userId) => this.sendToUser(userId, event, payload))
         return undefined
     }
 
