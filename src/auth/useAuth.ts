@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 import { ObjectId } from 'mongodb'
-import { User } from '@digitalstage/api-types'
+import { ErrorCodes, User } from '@digitalstage/api-types'
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { HttpRequest } from 'teckos/uws'
 import { AUTH_URL, RESTRICT_STAGE_CREATION } from '../env'
@@ -49,17 +49,17 @@ const useAuth = (distributor: Distributor) => {
             .catch((e) => {
                 error('Invalid token delivered')
                 error(e)
-                throw new Error('Invalid credentials')
+                throw new Error(ErrorCodes.InvalidCredentials)
             })
     }
 
     const authorizeHttpRequest = (req: HttpRequest): Promise<User<ObjectId>> => {
         const authorization: string = req.getHeader('authorization')
         if (!authorization) {
-            throw new Error('Missing authorization')
+            throw new Error(ErrorCodes.MissingAuthorization)
         }
         if (!authorization.startsWith('Bearer ')) {
-            throw new Error('Invalid authorization')
+            throw new Error(ErrorCodes.InvalidAuthorization)
         }
         const token = authorization.substr(7)
         return getUserByToken(token)

@@ -29,6 +29,7 @@ import {
     InitialStagePackage,
     DefaultThreeDimensionalProperties,
     DefaultVolumeProperties,
+    ErrorCodes,
 } from '@digitalstage/api-types'
 import { nanoid } from 'nanoid'
 import { unionWith } from 'lodash'
@@ -280,7 +281,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 if (routers.length === 1) {
                     return routers[0]
                 }
-                throw new Error('No router available')
+                throw new Error(ErrorCodes.NoRouterAvailable)
             })
 
     readRoutersByServer = (serverAddress: string): Promise<Router<ObjectId>[]> =>
@@ -497,7 +498,7 @@ class Distributor extends EventEmitter.EventEmitter {
     /* DEVICE */
     createDevice = (init: Omit<Device<ObjectId>, '_id'>): Promise<Device<ObjectId>> => {
         if (!init.type) {
-            throw new Error('Missing type of device')
+            throw new Error(ErrorCodes.MissingTypeOfDevice)
         }
         const doc: Device<ObjectId> & { _id?: ObjectId } = {
             uuid: null,
@@ -1424,7 +1425,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 }
                 return 0
             })
-        if (order === -1) throw new Error('No more members possible, max of 30 reached')
+        if (order === -1) throw new Error(ErrorCodes.MaxMembersReached)
         const doc = {
             ...initial,
             order,
@@ -2615,7 +2616,7 @@ class Distributor extends EventEmitter.EventEmitter {
         const stage = await this.readStage(stageId)
 
         if (stage.password && stage.password !== password) {
-            throw new Error('Invalid password')
+            throw new Error(ErrorCodes.InvalidPassword)
         }
 
         const isAdmin: boolean = stage.admins.find((admin) => admin.equals(userId)) !== undefined
@@ -2628,10 +2629,10 @@ class Distributor extends EventEmitter.EventEmitter {
                 stageId: stage._id,
             })
 
-        const wasUserAlreadyInStage = stageMember !== null
-        if (!wasUserAlreadyInStage) {
+        const wasUserAlreadyInStage = !!stageMember
+        if (!stageMember) {
             if (!groupId) {
-                throw new Error('Never assigned to this stage yet. Please specify the groupId!')
+                throw new Error(ErrorCodes.GroupIdMissing)
             }
             stageMember = await this.createStageMember({
                 userId: user._id,
@@ -2787,7 +2788,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                 this.sendToUser(userId, ServerDeviceEvents.StageRemoved, stageId)
                             )
                     }
-                    throw new Error(`User ${userId} was not inside ${stageId}`)
+                    throw new Error(ErrorCodes.NotMemberOfStage)
                 })
         })
 
@@ -3072,7 +3073,7 @@ class Distributor extends EventEmitter.EventEmitter {
             }
             return Promise.resolve()
         }
-        throw new Error('Stage is already fully served')
+        throw new Error(ErrorCodes.StageIsAlreadyFullyServed)
     }
 
     sendToStage = async (stageId: ObjectId, event: string, payload?: any): Promise<void> => {

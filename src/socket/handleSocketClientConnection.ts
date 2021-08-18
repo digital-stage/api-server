@@ -11,6 +11,7 @@ import {
     ChatMessage,
     VideoTrack,
     AudioTrack,
+    ErrorCodes,
 } from '@digitalstage/api-types'
 import useLogger from '../useLogger'
 import Distributor from '../distributor/Distributor'
@@ -169,7 +170,7 @@ const handleSocketClientConnection = async (
                                 return undefined
                             })
                         }
-                        throw new Error('No privileges')
+                        throw new Error(ErrorCodes.NoPrivileges)
                     })
                     .catch((e) => {
                         if (fn) {
@@ -210,7 +211,7 @@ const handleSocketClientConnection = async (
                                 return undefined
                             })
                         }
-                        throw new Error('No privileges')
+                        throw new Error(ErrorCodes.NoPrivileges)
                     })
                     .catch((e) => {
                         if (fn) {
@@ -295,7 +296,7 @@ const handleSocketClientConnection = async (
                                 return undefined
                             })
                         }
-                        throw new Error('No privileges')
+                        throw new Error(ErrorCodes.NoPrivileges)
                     })
                     .catch((e) => {
                         if (fn) {
@@ -336,7 +337,7 @@ const handleSocketClientConnection = async (
                                 return undefined
                             })
                         }
-                        throw new Error('No privileges')
+                        throw new Error(ErrorCodes.NoPrivileges)
                     })
                     .catch((e) => {
                         if (fn) {
@@ -420,7 +421,7 @@ const handleSocketClientConnection = async (
                     if (foundDevice) {
                         return distributor.deleteDevice(id)
                     }
-                    throw new Error('Not found or allowed')
+                    throw new Error(ErrorCodes.NoPrivileges)
                 })
                 .then(() => {
                     if (fn) {

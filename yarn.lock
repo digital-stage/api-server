@@ -50,10 +50,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@digitalstage/api-types@^0.3.9":
-  version "0.3.9"
-  resolved "https://registry.yarnpkg.com/@digitalstage/api-types/-/api-types-0.3.9.tgz#18a0ab2cef27b40219f8d19a1fb2868b85568f09"
-  integrity sha512-VuKfVYFZ4gXPWDKh4pdaZbYlN3whk11c5w6060UaOkcQbNniNYjxfVNkkDHmZvUezKba6V2Aae/2d5cbAhzOTQ==
+"@digitalstage/api-types@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@digitalstage/api-types/-/api-types-0.4.0.tgz#ea042c239471f70512a265e426cd0ec06818fcb1"
+  integrity sha512-7zYFlZjbWZdqxa9fqVDeT8LWzsM2HqL2Uvbm9nPPZRRP7+vS59u6S7yqwuAQTvzJ3DImag2QOdX64m4KzfXseQ==
 
 "@eslint/eslintrc@^0.4.3":
   version "0.4.3"
@@ -1616,10 +1616,10 @@ ioredis@^4.27.2:
     redis-parser "^3.0.0"
     standard-as-callback "^2.1.0"
 
-ioredis@^4.27.7:
-  version "4.27.7"
-  resolved "https://registry.yarnpkg.com/ioredis/-/ioredis-4.27.7.tgz#11bf2947e23a0e8055931afa7c2da89fc48c8ff3"
-  integrity sha512-lqvFFmUyGIHlrNyDvBoakzy1+ioJzNyoP6CP97GWtdTjWq9IOAnv6l0HUTsqhvd/z9etGgtrDHZ4kWCMAwNkug==
+ioredis@^4.27.8:
+  version "4.27.8"
+  resolved "https://registry.yarnpkg.com/ioredis/-/ioredis-4.27.8.tgz#822c2d1ac44067a8f7b92fb673070fc9d661c56e"
+  integrity sha512-AcMEevap2wKxNcYEybZ/Qp+MR2HbNNUwGjG4sVCC3cAJ/zR9HXKAkolXOuR6YcOGPf7DHx9mWb/JKtAGujyPow==
   dependencies:
     cluster-key-slot "^1.1.0"
     debug "^4.3.1"
