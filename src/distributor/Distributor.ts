@@ -1104,9 +1104,8 @@ class Distributor extends EventEmitter.EventEmitter {
                                     )
                                 } else {
                                     if (stage.videoRouter) {
-                                        console.log('Sending to video router ', stage.videoRouter)
                                         this.sendToRouter(
-                                            stage.audioRouter,
+                                            stage.videoRouter,
                                             ServerRouterEvents.UnServeStage,
                                             {
                                                 type: stage.videoType,
@@ -1115,7 +1114,6 @@ class Distributor extends EventEmitter.EventEmitter {
                                         )
                                     }
                                     if (stage.audioRouter) {
-                                        console.log('Sending to audio router ', stage.audioRouter)
                                         this.sendToRouter(
                                             stage.audioRouter,
                                             ServerRouterEvents.UnServeStage,
