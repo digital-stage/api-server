@@ -3091,6 +3091,7 @@ class Distributor extends EventEmitter.EventEmitter {
             prev.equals(curr)
         )
         console.log('Send to stage')
+        console.log(adminIds, stageMemberIds)
         console.log(userIds)
         userIds.map((userId) => this.sendToUser(userId, event, payload))
         return undefined
