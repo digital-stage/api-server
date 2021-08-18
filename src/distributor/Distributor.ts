@@ -64,7 +64,8 @@ class Distributor extends EventEmitter.EventEmitter {
         this._db = database
         this._apiServer = apiServer
         this.prepareStore()
-        this.cleanUp(this._apiServer)
+            .then(() => this.cleanUp(this._apiServer))
+            .catch((err) => error(err))
     }
 
     getStore = () => this._db
@@ -425,7 +426,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 throw new Error(`Could not find and update user ${id}`)
             })
     }
-
+    /*
     updateUserWithPermissions(
         id: ObjectId,
         update: Partial<Omit<User<ObjectId>, '_id'>>
@@ -454,7 +455,7 @@ class Distributor extends EventEmitter.EventEmitter {
                     `Could not find and update user with permission ${id}: ${result.lastErrorObject}`
                 )
             })
-    }
+    } */
 
     deleteUser = (id: ObjectId): Promise<any> =>
         this._db
@@ -1009,7 +1010,7 @@ class Distributor extends EventEmitter.EventEmitter {
         return this._db
             .collection<Stage<ObjectId>>(Collections.STAGES)
             .insertOne(doc)
-            .then((result) => {
+            .then(async (result) => {
                 const stage = {
                     ...doc,
                     _id: result.insertedId,
@@ -1025,7 +1026,8 @@ class Distributor extends EventEmitter.EventEmitter {
                         stage as unknown as ServerDevicePayloads.StageAdded
                     )
                 )
-                return this.assignRoutersToStage(stage).then(() => stage)
+                await this.assignRoutersToStage(stage).catch((err) => warn(err))
+                return stage
             })
     }
 
