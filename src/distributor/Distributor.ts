@@ -1088,51 +1088,6 @@ class Distributor extends EventEmitter.EventEmitter {
                             return Promise.all(groups.map((group) => this.deleteGroup(group._id)))
                         })
                         .then(() => {
-                            // Inform routers
-                            if (stage.videoRouter !== null || stage.audioRouter !== null) {
-                                if (
-                                    stage.audioRouter !== null &&
-                                    stage.videoRouter.equals(stage.audioRouter)
-                                ) {
-                                    this.sendToRouter(
-                                        stage.audioRouter,
-                                        ServerRouterEvents.UnServeStage,
-                                        {
-                                            type: stage.audioType,
-                                            stageId: id as any,
-                                        } as ServerRouterPayloads.UnServeStage
-                                    )
-                                } else {
-                                    if (stage.videoRouter) {
-                                        this.sendToRouter(
-                                            stage.videoRouter,
-                                            ServerRouterEvents.UnServeStage,
-                                            {
-                                                type: stage.videoType,
-                                                stageId: id as any,
-                                            } as ServerRouterPayloads.UnServeStage
-                                        )
-                                    }
-                                    if (stage.audioRouter) {
-                                        this.sendToRouter(
-                                            stage.audioRouter,
-                                            ServerRouterEvents.UnServeStage,
-                                            {
-                                                type: stage.audioType,
-                                                stageId: id as any,
-                                            } as ServerRouterPayloads.UnServeStage
-                                        )
-                                    }
-                                }
-                            }
-                            return undefined
-                        })
-                        .then(() => {
-                            // Emit update
-                            this.emit(ServerDeviceEvents.StageRemoved, id)
-                            return this.sendToStage(id, ServerDeviceEvents.StageRemoved, id)
-                        })
-                        .then(() => {
                             if (
                                 stage.audioRouter &&
                                 stage.videoRouter &&
@@ -1170,8 +1125,12 @@ class Distributor extends EventEmitter.EventEmitter {
                                     } as ServerRouterPayloads.UnServeStage
                                 )
                             }
-
                             return undefined
+                        })
+                        .then(() => {
+                            // Emit update
+                            this.emit(ServerDeviceEvents.StageRemoved, id)
+                            return this.sendToStage(id, ServerDeviceEvents.StageRemoved, id)
                         })
                         .then(() =>
                             this._db
