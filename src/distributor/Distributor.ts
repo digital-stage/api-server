@@ -31,6 +31,7 @@ import {
     DefaultVolumeProperties,
 } from '@digitalstage/api-types'
 import { nanoid } from 'nanoid'
+import { unionWith } from 'lodash'
 import { DEBUG_EVENTS, DEBUG_PAYLOAD } from '../env'
 import useLogger from '../useLogger'
 import generateColor from '../utils/generateColor'
@@ -3086,16 +3087,10 @@ class Distributor extends EventEmitter.EventEmitter {
             .find({ stageId }, { projection: { userId: 1 } })
             .toArray()
             .then((stageMembers) => stageMembers.map((stageMember) => stageMember.userId))
-        const userIds: {
-            [id: string]: ObjectId
-        } = {}
-        adminIds.forEach((adminId) => {
-            userIds[adminId.toHexString()] = adminId
-        })
-        stageMemberIds.forEach((stageMemberId) => {
-            userIds[stageMemberId.toHexString()] = stageMemberId
-        })
-        Object.values(userIds).forEach((userId) => this.sendToUser(userId, event, payload))
+        unionWith<ObjectId>(adminIds, stageMemberIds, (prev, curr) => prev.equals(curr)).map(
+            (userId) => this.sendToUser(userId, event, payload)
+        )
+        return undefined
     }
 
     sendToStageManagers = (stageId: ObjectId, event: string, payload?: any): Promise<void> =>
