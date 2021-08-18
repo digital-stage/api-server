@@ -2650,6 +2650,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 active: true,
             })
         } else if (!stageMember.active) {
+            stageMember.active = true
             await this.updateStageMember(stageMember._id, {
                 active: true,
             })
@@ -2692,7 +2693,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 return this.sendToUser(user._id, ServerDeviceEvents.StageJoined, {
                     ...wholeStage,
                     stageId: stage._id,
-                    groupId,
+                    groupId: stageMember.groupId;
                     stageMemberId: stageMember,
                 })
             }
