@@ -2693,7 +2693,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 return this.sendToUser(user._id, ServerDeviceEvents.StageJoined, {
                     ...wholeStage,
                     stageId: stage._id,
-                    groupId: stageMember.groupId.
+                    groupId: stageMember.groupId,
                     stageMemberId: stageMember,
                 })
             }
