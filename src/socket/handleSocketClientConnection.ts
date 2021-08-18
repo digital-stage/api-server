@@ -1507,7 +1507,7 @@ const handleSocketClientConnection = async (
         (payload: ClientDevicePayloads.JoinStage, fn?: (error?: string) => void) => {
             trace(`${user.name}: ${ClientDeviceEvents.JoinStage}`)
             const stageId = new ObjectId(payload.stageId)
-            const groupId = new ObjectId(payload.groupId)
+            const groupId = payload.groupId ? new ObjectId(payload.groupId) : undefined
             return distributor
                 .joinStage(user._id, stageId, groupId, payload.password)
                 .then(() => trace(`${user.name} joined stage ${stageId} and group ${groupId}`))
@@ -1562,33 +1562,78 @@ const handleSocketClientConnection = async (
     )
 
     // P2P signaling
-    socket.on(ClientDeviceEvents.SendP2POffer, (payload: ClientDevicePayloads.SendP2POffer) => {
-        trace(`${user.name}: ${ClientDeviceEvents.SendP2POffer} to stage device ${payload.to}`)
-        return distributor.sendToStageDevice(
-            new ObjectId(payload.to),
-            ServerDeviceEvents.P2POfferSent,
-            payload
-        )
-    })
-    socket.on(ClientDeviceEvents.SendP2PAnswer, (payload: ClientDevicePayloads.SendP2PAnswer) => {
-        trace(`${user.name}: ${ClientDeviceEvents.SendP2PAnswer} to stage device ${payload.to}`)
-        return distributor.sendToStageDevice(
-            new ObjectId(payload.to),
-            ServerDeviceEvents.P2PAnswerSent,
-            payload
-        )
-    })
+    socket.on(
+        ClientDeviceEvents.SendP2POffer,
+        (payload: ClientDevicePayloads.SendP2POffer, fn?: (error: string | null) => void) => {
+            trace(`${user.name}: ${ClientDeviceEvents.SendP2POffer} to stage device ${payload.to}`)
+            return distributor
+                .sendToStageDevice(
+                    new ObjectId(payload.to),
+                    ServerDeviceEvents.P2POfferSent,
+                    payload
+                )
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e) => {
+                    if (fn) {
+                        fn(e)
+                    }
+                    error(e)
+                })
+        }
+    )
+    socket.on(
+        ClientDeviceEvents.SendP2PAnswer,
+        (payload: ClientDevicePayloads.SendP2PAnswer, fn?: (error: string | null) => void) => {
+            trace(`${user.name}: ${ClientDeviceEvents.SendP2PAnswer} to stage device ${payload.to}`)
+            return distributor
+                .sendToStageDevice(
+                    new ObjectId(payload.to),
+                    ServerDeviceEvents.P2PAnswerSent,
+                    payload
+                )
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e) => {
+                    if (fn) {
+                        fn(e)
+                    }
+                    error(e)
+                })
+        }
+    )
     socket.on(
         ClientDeviceEvents.SendIceCandidate,
-        (payload: ClientDevicePayloads.SendIceCandidate) => {
+        (payload: ClientDevicePayloads.SendIceCandidate, fn?: (error: string | null) => void) => {
             trace(
                 `${user.name}: ${ClientDeviceEvents.SendIceCandidate} to stage device ${payload.to}`
             )
-            return distributor.sendToStageDevice(
-                new ObjectId(payload.to),
-                ServerDeviceEvents.IceCandidateSent,
-                payload
-            )
+            return distributor
+                .sendToStageDevice(
+                    new ObjectId(payload.to),
+                    ServerDeviceEvents.IceCandidateSent,
+                    payload
+                )
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e) => {
+                    if (fn) {
+                        fn(e)
+                    }
+                    error(e)
+                })
         }
     )
 

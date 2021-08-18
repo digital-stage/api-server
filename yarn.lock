@@ -50,10 +50,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@digitalstage/api-types@^0.3.8":
-  version "0.3.8"
-  resolved "https://registry.yarnpkg.com/@digitalstage/api-types/-/api-types-0.3.8.tgz#a07382dc818a5eb950f95c5a933c7917ffee2192"
-  integrity sha512-HXcNhcRkV4a9pwuUz+DMhwbvWxt/fDotMZFrXWr/lcp3VwguC8h00uqkcrPqeUlf2q3ym+oMFlgFtGJSbL28Dg==
+"@digitalstage/api-types@^0.3.9":
+  version "0.3.9"
+  resolved "https://registry.yarnpkg.com/@digitalstage/api-types/-/api-types-0.3.9.tgz#18a0ab2cef27b40219f8d19a1fb2868b85568f09"
+  integrity sha512-VuKfVYFZ4gXPWDKh4pdaZbYlN3whk11c5w6060UaOkcQbNniNYjxfVNkkDHmZvUezKba6V2Aae/2d5cbAhzOTQ==
 
 "@eslint/eslintrc@^0.4.3":
   version "0.4.3"
@@ -276,10 +276,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-15.12.2.tgz#1f2b42c4be7156ff4a6f914b2fb03d05fa84e38d"
   integrity sha512-zjQ69G564OCIWIOHSXyQEEDpdpGl+G348RAKY0XXy9Z5kU9Vzv1GMNnkar/ZJ8dzXB3COzD9Mo9NtRZ4xfgUww==
 
-"@types/node@^16.6.0":
-  version "16.6.0"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.6.0.tgz#0d5685f85066f94e97f19e8a67fe003c5fadacc4"
-  integrity sha512-OyiZPohMMjZEYqcVo/UJ04GyAxXOJEZO/FpzyXxcH4r/ArrVoXHf4MbUrkLp0Tz7/p1mMKpo5zJ6ZHl8XBNthQ==
+"@types/node@^16.6.1":
+  version "16.6.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.6.1.tgz#aee62c7b966f55fc66c7b6dfa1d58db2a616da61"
+  integrity sha512-Sr7BhXEAer9xyGuCN3Ek9eg9xPviCF2gfu9kTfuU2HkTVAMYSDeX40fvpmo72n5nansg3nsBjuQBrsS28r+NUw==
 
 "@types/webidl-conversions@*":
   version "6.1.1"
