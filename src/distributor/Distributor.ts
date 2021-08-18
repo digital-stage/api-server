@@ -2642,20 +2642,17 @@ class Distributor extends EventEmitter.EventEmitter {
                 ...DefaultVolumeProperties,
                 ...DefaultThreeDimensionalProperties,
             })
-        } else if ((groupId && !stageMember.groupId.equals(groupId)) || !stageMember.active) {
-            // Update stage member
+        } else if (groupId && !stageMember.groupId.equals(groupId)) {
             stageMember.active = true
-            if (groupId) {
-                stageMember.groupId = groupId
-                await this.updateStageMember(stageMember._id, {
-                    groupId,
-                    active: true,
-                })
-            } else {
-                await this.updateStageMember(stageMember._id, {
-                    active: true,
-                })
-            }
+            stageMember.groupId = groupId
+            await this.updateStageMember(stageMember._id, {
+                groupId,
+                active: true,
+            })
+        } else if (!stageMember.active) {
+            await this.updateStageMember(stageMember._id, {
+                active: true,
+            })
         }
         // Also create a custom stage member for the same user and mute it per default for all devices
         await this._db
@@ -2689,7 +2686,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 this.emit(ServerDeviceEvents.StageJoined, {
                     ...wholeStage,
                     stageId: stage._id,
-                    groupId,
+                    groupId: stageMember.groupId,
                     user: user._id,
                 })
                 return this.sendToUser(user._id, ServerDeviceEvents.StageJoined, {
