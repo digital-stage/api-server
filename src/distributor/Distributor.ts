@@ -1090,7 +1090,10 @@ class Distributor extends EventEmitter.EventEmitter {
                         .then(() => {
                             // Inform routers
                             if (stage.videoRouter !== null || stage.audioRouter !== null) {
-                                if (stage.videoRouter === stage.audioRouter) {
+                                if (
+                                    stage.videoRouter !== null &&
+                                    stage.videoRouter === stage.audioRouter
+                                ) {
                                     this.sendToRouter(
                                         stage.audioRouter,
                                         ServerRouterEvents.UnServeStage,
