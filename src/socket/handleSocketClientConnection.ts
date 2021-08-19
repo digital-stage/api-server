@@ -193,25 +193,12 @@ const handleSocketClientConnection = async (
                 )
                 const id = new ObjectId(payload)
                 return distributor
-                    .readAudioTrack(id)
-                    .then(async (audioTrack) => {
-                        if (audioTrack.userId === user._id) return true
-                        const managedStage = await distributor.readManagedStage(
-                            user._id,
-                            audioTrack.stageId
-                        )
-                        return !!managedStage
-                    })
-                    .then((hasPrivileges) => {
-                        if (hasPrivileges) {
-                            return distributor.deleteAudioTrack(id).then(() => {
-                                if (fn) {
-                                    return fn(null)
-                                }
-                                return undefined
-                            })
+                    .deleteAudioTrack(id, user._id)
+                    .then(() => {
+                        if (fn) {
+                            return fn(null)
                         }
-                        throw new Error(ErrorCodes.NoPrivileges)
+                        return undefined
                     })
                     .catch((e) => {
                         if (fn) {
@@ -319,25 +306,12 @@ const handleSocketClientConnection = async (
                 )
                 const id = new ObjectId(payload)
                 return distributor
-                    .readVideoTrack(id)
-                    .then(async (audioTrack) => {
-                        if (audioTrack.userId === user._id) return true
-                        const managedStage = await distributor.readManagedStage(
-                            user._id,
-                            audioTrack.stageId
-                        )
-                        return !!managedStage
-                    })
-                    .then((hasPrivileges) => {
-                        if (hasPrivileges) {
-                            return distributor.deleteVideoTrack(id).then(() => {
-                                if (fn) {
-                                    return fn(null)
-                                }
-                                return undefined
-                            })
+                    .deleteVideoTrack(id, user._id)
+                    .then(() => {
+                        if (fn) {
+                            return fn(null)
                         }
-                        throw new Error(ErrorCodes.NoPrivileges)
+                        return undefined
                     })
                     .catch((e) => {
                         if (fn) {

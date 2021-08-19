@@ -1652,12 +1652,13 @@ class Distributor extends EventEmitter.EventEmitter {
             })
     }
 
-    deleteAudioTrack(id: ObjectId): Promise<any> {
+    deleteAudioTrack(id: ObjectId, userId?: ObjectId): Promise<any> {
         return this._db
             .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
             .findOneAndDelete(
                 {
                     _id: id,
+                    userId,
                 },
                 { projection: { stageId: 1 } }
             )
@@ -1763,12 +1764,13 @@ class Distributor extends EventEmitter.EventEmitter {
             })
     }
 
-    deleteVideoTrack(id: ObjectId): Promise<void> {
+    deleteVideoTrack(id: ObjectId, userId?: ObjectId): Promise<void> {
         return this._db
             .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
             .findOneAndDelete(
                 {
                     _id: id,
+                    userId,
                 },
                 { projection: { stageId: 1 } }
             )
