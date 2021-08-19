@@ -1656,10 +1656,12 @@ class Distributor extends EventEmitter.EventEmitter {
         return this._db
             .collection<AudioTrack<ObjectId>>(Collections.AUDIO_TRACKS)
             .findOneAndDelete(
-                {
-                    _id: id,
-                    userId,
-                },
+                userId
+                    ? {
+                          _id: id,
+                          userId,
+                      }
+                    : { _id: id },
                 { projection: { stageId: 1 } }
             )
             .then((result) => {
@@ -1768,10 +1770,12 @@ class Distributor extends EventEmitter.EventEmitter {
         return this._db
             .collection<VideoTrack<ObjectId>>(Collections.VIDEO_TRACKS)
             .findOneAndDelete(
-                {
-                    _id: id,
-                    userId,
-                },
+                userId
+                    ? {
+                          _id: id,
+                          userId,
+                      }
+                    : { _id: id },
                 { projection: { stageId: 1 } }
             )
             .then((result) => {
