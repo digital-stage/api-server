@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/* eslint-disable no-console,@typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call */
 import debug, { Debugger } from 'debug'
 import * as Sentry from '@sentry/node'
 import * as uncaught from 'uncaught'
@@ -9,6 +9,7 @@ import { SENTRY_DSN, USE_SENTRY } from './env'
 const d = debug('server')
 
 declare global {
+    // eslint-disable-next-line @typescript-eslint/no-namespace
     namespace NodeJS {
         interface Global {
             __rootdir__: string
@@ -76,10 +77,10 @@ const useLogger = (
     let warn
     let error
     if (USE_SENTRY) {
-        warn = (message) => console.warn(`${namespace}:warn ${message}`)
+        warn = (message: string) => console.warn(`${namespace}:warn ${message}`)
         error = (message: string | Error) => {
             if (message) {
-                console.error(`${namespace}:error ${message}`)
+                console.error(`${namespace}:error ${message.toString()}`)
                 console.trace(message)
                 Sentry.captureException(message)
             }
@@ -98,4 +99,4 @@ const useLogger = (
     }
 }
 
-export default useLogger
+export { useLogger }

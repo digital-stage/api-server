@@ -17,4 +17,4 @@ const Schema = {
     // ChatMessage: "c",
     ChatMessage: 'c',
 }
-export default Schema
+export { Schema }

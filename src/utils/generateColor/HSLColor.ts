@@ -51,4 +51,4 @@ class HSLColor {
     }
 }
 
-export default HSLColor
+export { HSLColor }

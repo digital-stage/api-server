@@ -19,4 +19,4 @@ enum Collections {
     CUSTOM_AUDIO_TRACK_VOLUMES = 'c_r_ap_v',
     INVITE_LINKS = 'i',
 }
-export default Collections
+export { Collections }

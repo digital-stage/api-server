@@ -5,4 +5,4 @@ interface AuthUser {
     avatarUrl?: string
 }
 
-export default AuthUser
+export { AuthUser }

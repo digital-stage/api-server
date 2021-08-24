@@ -1,12 +1,11 @@
 import { UWSProvider } from 'teckos'
-// eslint-disable-next-line import/no-extraneous-dependencies
 import * as uWS from 'teckos/uws'
 import { MongoClient } from 'mongodb'
 import { address } from 'ip'
 import { DEBUG_PAYLOAD, MONGO_CA, MONGO_DB, MONGO_URL, PORT, REDIS_URL } from './env'
-import useLogger from './useLogger'
-import handleSocketConnection from './socket/handleSocketConnection'
-import Distributor from './distributor/Distributor'
+import { useLogger } from './useLogger'
+import { handleSocketConnection } from './socket/handleSocketConnection'
+import { Distributor } from './distributor/Distributor'
 
 const { error, warn, info } = useLogger('')
 
@@ -39,7 +38,7 @@ let mongoClient = new MongoClient(MONGO_URL, {
 })
 
 const start = async () => {
-    const apiServer: string = `${address()}:${PORT}`
+    const apiServer = `${address()}:${PORT}`
     mongoClient = await mongoClient.connect()
     const db = mongoClient.db(MONGO_DB)
     const distributor = new Distributor(io, db, apiServer)

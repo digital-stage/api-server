@@ -6,8 +6,8 @@ import {
     ClientRouterEvents,
     ClientRouterPayloads,
 } from '@digitalstage/api-types'
-import Distributor from '../distributor/Distributor'
-import useLogger from '../useLogger'
+import { Distributor } from '../distributor/Distributor'
+import { useLogger } from '../useLogger'
 
 const { error, trace } = useLogger('socket:router')
 
@@ -20,12 +20,16 @@ const handleSocketRouterConnection = async (
     socket.join(router._id.toHexString())
 
     socket.on('disconnect', () => {
-        trace(`Router ${router._id} disconnected`)
+        trace(`Router ${router._id.toHexString()} disconnected`)
         return distributor.deleteRouter(router._id).catch((e) => error(e))
     })
 
     socket.on(ClientRouterEvents.StageServed, (payload: ClientRouterPayloads.StageServed) => {
-        trace(`${router._id}: ${ClientRouterEvents.StageServed}(${JSON.stringify(payload)})`)
+        trace(
+            `${router._id.toHexString()}: ${ClientRouterEvents.StageServed}(${JSON.stringify(
+                payload
+            )})`
+        )
         const { _id, ...update } = payload.update
         return distributor
             .updateStage(new ObjectId(_id), {
@@ -41,7 +45,11 @@ const handleSocketRouterConnection = async (
     })
 
     socket.on(ClientRouterEvents.ChangeStage, (payload: ClientRouterPayloads.ChangeStage) => {
-        trace(`${router._id}: ${ClientRouterEvents.StageServed}(${JSON.stringify(payload)})`)
+        trace(
+            `${router._id.toHexString()}: ${ClientRouterEvents.StageServed}(${JSON.stringify(
+                payload
+            )})`
+        )
         const { _id, ...update } = payload
         return distributor
             .updateStage(new ObjectId(_id), {
@@ -57,7 +65,11 @@ const handleSocketRouterConnection = async (
     })
 
     socket.on(ClientRouterEvents.StageUnServed, (payload: ClientRouterPayloads.StageUnServed) => {
-        trace(`${router._id}: ${ClientRouterEvents.StageUnServed}(${JSON.stringify(payload)})`)
+        trace(
+            `${router._id.toHexString()}: ${ClientRouterEvents.StageUnServed}(${JSON.stringify(
+                payload
+            )})`
+        )
         const { _id, ...update } = payload.update
 
         // Stage may be deleted already, since we are telling routers to unserve when deleting stages, so...
@@ -71,7 +83,11 @@ const handleSocketRouterConnection = async (
     })
 
     socket.on(ClientRouterEvents.ChangeRouter, (payload: ClientRouterPayloads.ChangeRouter) => {
-        trace(`${router._id}: ${ClientRouterEvents.ChangeRouter}(${JSON.stringify(payload)})`)
+        trace(
+            `${router._id.toHexString()}: ${ClientRouterEvents.ChangeRouter}(${JSON.stringify(
+                payload
+            )})`
+        )
         // Expect supported types not changing during a websocket session, so no implementation necessary here
         const { _id, ...update } = payload
         return distributor
@@ -82,14 +98,14 @@ const handleSocketRouterConnection = async (
     })
 
     socket.on(ClientRouterEvents.Ready, () => {
-        trace(`${router._id}: ${ClientRouterEvents.Ready}`)
+        trace(`${router._id.toHexString()}: ${ClientRouterEvents.Ready}`)
         distributor.assignRoutersToStages().catch((err) => error(err))
     })
 
     socket.emit(ServerRouterEvents.Ready, router)
-    trace(`Registered socket handler for router ${router._id} at socket ${socket.id}`)
+    trace(`Registered socket handler for router ${router._id.toHexString()} at socket ${socket.id}`)
 
     return router
 }
 
-export default handleSocketRouterConnection
+export { handleSocketRouterConnection }

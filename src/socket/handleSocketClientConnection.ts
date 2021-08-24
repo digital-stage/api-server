@@ -13,8 +13,8 @@ import {
     AudioTrack,
     ErrorCodes,
 } from '@digitalstage/api-types'
-import useLogger from '../useLogger'
-import Distributor from '../distributor/Distributor'
+import { useLogger } from '../useLogger'
+import { Distributor } from '../distributor/Distributor'
 
 const { error, trace } = useLogger('socket:client')
 
@@ -44,38 +44,39 @@ const handleSocketClientConnection = async (
             device = await distributor.createDevice({
                 ...initialDevice,
                 userId: user._id,
-                online: true,
             })
         }
         socket.join(device._id.toHexString())
 
-        socket.on('disconnect', () => {
-            // TODO: Remove all tracks associated with this device!
-            return Promise.all([
-                distributor
-                    .readVideoTrackIdsByDevice(device._id)
-                    .then((trackIds) =>
-                        Promise.all(
-                            trackIds.map((trackId) => distributor.deleteVideoTrack(trackId))
-                        )
-                    ),
-                distributor
-                    .readAudioTrackIdsByDevice(device._id)
-                    .then((trackIds) =>
-                        Promise.all(
-                            trackIds.map((trackId) => distributor.deleteAudioTrack(trackId))
-                        )
-                    ),
-            ])
-                .then(() => {
-                    if (device.uuid) {
-                        trace(`Set device ${device._id} offline`)
-                        return distributor.updateDevice(user._id, device._id, { online: false })
-                    }
-                    trace(`Removing device ${device._id}`)
-                    return distributor.deleteDevice(device._id)
-                })
-                .catch((err) => error(err))
+        socket.on('disconnect', async () => {
+            try {
+                await Promise.all([
+                    distributor
+                        .readVideoTrackIdsByDevice(device._id)
+                        .then((trackIds) =>
+                            Promise.all(
+                                trackIds.map((trackId) => distributor.deleteVideoTrack(trackId))
+                            )
+                        ),
+                    distributor
+                        .readAudioTrackIdsByDevice(device._id)
+                        .then((trackIds_1) =>
+                            Promise.all(
+                                trackIds_1.map((trackId_1) =>
+                                    distributor.deleteAudioTrack(trackId_1)
+                                )
+                            )
+                        ),
+                ])
+                if (device.uuid) {
+                    trace(`Set device ${device._id.toHexString()} offline`)
+                    return await distributor.updateDevice(user._id, device._id, { online: false })
+                }
+                trace(`Removing device ${device._id.toHexString()}`)
+                return await distributor.deleteDevice(device._id)
+            } catch (err) {
+                return error(err)
+            }
         })
 
         await distributor
@@ -109,6 +110,9 @@ const handleSocketClientConnection = async (
                     )})`
                 )
                 const { stageId, ...data } = payload
+                if (!stageId) {
+                    return fn('Missing stage ID')
+                }
                 return distributor
                     .readStageDeviceByStage(device._id, new ObjectId(stageId))
                     .then((stageDevice) => {
@@ -132,7 +136,7 @@ const handleSocketClientConnection = async (
                         }
                         throw new Error('No stage device found to assign audio track to')
                     })
-                    .catch((e) => {
+                    .catch((e: Error) => {
                         error(e)
                         if (fn) fn(e.message)
                     })
@@ -172,7 +176,7 @@ const handleSocketClientConnection = async (
                         }
                         throw new Error(ErrorCodes.NoPrivileges)
                     })
-                    .catch((e) => {
+                    .catch((e: Error) => {
                         if (fn) {
                             fn(e.message)
                         }
@@ -200,7 +204,7 @@ const handleSocketClientConnection = async (
                         }
                         return undefined
                     })
-                    .catch((e) => {
+                    .catch((e: Error) => {
                         if (fn) {
                             fn(e.message)
                         }
@@ -222,6 +226,9 @@ const handleSocketClientConnection = async (
                     )})`
                 )
                 const { stageId, ...data } = payload
+                if (!stageId) {
+                    return fn('Missing stage ID')
+                }
                 return distributor
                     .readStageDeviceByStage(device._id, new ObjectId(stageId))
                     .then((stageDevice) => {
@@ -245,7 +252,7 @@ const handleSocketClientConnection = async (
                         }
                         throw new Error('No stage device found to assign video track to')
                     })
-                    .catch((e) => {
+                    .catch((e: Error) => {
                         error(e)
                         if (fn) fn(e.message)
                     })
@@ -285,7 +292,7 @@ const handleSocketClientConnection = async (
                         }
                         throw new Error(ErrorCodes.NoPrivileges)
                     })
-                    .catch((e) => {
+                    .catch((e: Error) => {
                         if (fn) {
                             fn(e.message)
                         }
@@ -313,7 +320,7 @@ const handleSocketClientConnection = async (
                         }
                         return undefined
                     })
-                    .catch((e) => {
+                    .catch((e: Error) => {
                         if (fn) {
                             fn(e.message)
                         }
@@ -336,7 +343,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -354,7 +361,7 @@ const handleSocketClientConnection = async (
                 }
                 return undefined
             })
-            .catch((e) => {
+            .catch((e: Error) => {
                 if (fn) fn(e.message)
                 error(e)
             })
@@ -376,7 +383,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -403,7 +410,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -435,7 +442,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -459,7 +466,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -475,9 +482,9 @@ const handleSocketClientConnection = async (
                 .readUser(user._id)
                 .then((currentUser) => {
                     if (currentUser && currentUser.stageId && currentUser.stageMemberId) {
-                        const chatMessage: ChatMessage<any> = {
-                            userId: currentUser._id,
-                            stageMemberId: currentUser.stageMemberId,
+                        const chatMessage: ChatMessage = {
+                            userId: currentUser._id.toHexString(),
+                            stageMemberId: currentUser.stageMemberId.toHexString(),
                             message: payload,
                             time: Date.now(),
                         }
@@ -515,7 +522,7 @@ const handleSocketClientConnection = async (
                     )
                 })
                 .then((code) => fn(null, code))
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -539,7 +546,7 @@ const handleSocketClientConnection = async (
                     )
                 })
                 .then((code) => fn(null, code))
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -558,7 +565,7 @@ const handleSocketClientConnection = async (
             distributor
                 .decodeInviteCode(payload)
                 .then((result) => fn(null, result))
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -572,15 +579,23 @@ const handleSocketClientConnection = async (
             fn: (error: string | null, stage?: Stage<ObjectId>) => void
         ) => {
             trace(`${user.name}: ${ClientDeviceEvents.CreateStage}(${JSON.stringify(payload)})`)
+            const admins =
+                payload?.admins && Array.isArray(payload.admins)
+                    ? payload.admins.map((admin) => new ObjectId(admin))
+                    : []
+            const soundEditors =
+                payload?.soundEditors && Array.isArray(payload.soundEditors)
+                    ? payload.soundEditors.map((soundEditor) => new ObjectId(soundEditor))
+                    : []
             return distributor
                 .readUser(user._id)
                 .then((currentUser) => {
                     if (currentUser.canCreateStage) {
                         return distributor.createStage({
                             ...payload,
-                            admins: payload.admins ? [...payload.admins, user._id] : [user._id],
+                            admins: payload.admins ? [...admins, user._id] : [user._id],
                             soundEditors: payload.soundEditors
-                                ? [...payload.soundEditors, user._id]
+                                ? [...soundEditors, user._id]
                                 : [user._id],
                         })
                     }
@@ -592,7 +607,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -612,7 +627,11 @@ const handleSocketClientConnection = async (
                     if (stage) {
                         return distributor.updateStage(id, safePayload)
                     }
-                    throw new Error(`User ${user.name} has no privileges to update the stage ${id}`)
+                    throw new Error(
+                        `User ${
+                            user.name
+                        } has no privileges to update the stage ${id.toHexString()}`
+                    )
                 })
                 .then(() => {
                     if (fn) {
@@ -620,7 +639,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -639,7 +658,11 @@ const handleSocketClientConnection = async (
                     if (stage) {
                         return distributor.deleteStage(id)
                     }
-                    throw new Error(`User ${user.name} has no privileges to remove the stage ${id}`)
+                    throw new Error(
+                        `User ${
+                            user.name
+                        } has no privileges to remove the stage ${id.toHexString()}`
+                    )
                 })
                 .then(() => {
                     if (fn) {
@@ -647,7 +670,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) fn(e.message)
                     error(e)
                 })
@@ -660,8 +683,7 @@ const handleSocketClientConnection = async (
             fn?: (error: string | null, group?: Group<ObjectId>) => void
         ) => {
             trace(`${user.name}: ${ClientDeviceEvents.CreateGroup}(${JSON.stringify(payload)})`)
-            const { stageId: rawStageId, _id, ...safePayload } = payload as any
-            const stageId = new ObjectId(rawStageId)
+            const stageId = new ObjectId(payload.stageId)
             distributor
                 .readAdministratedStage(user._id, stageId)
                 .then((stage) => {
@@ -679,12 +701,14 @@ const handleSocketClientConnection = async (
                             iconUrl: null,
                             volume: 1,
                             muted: false,
-                            ...safePayload,
+                            ...payload,
                             stageId,
                         })
                     }
                     throw new Error(
-                        `User ${user.name} has no privileges to add group for stage ${stageId}`
+                        `User ${
+                            user.name
+                        } has no privileges to add group for stage ${stageId.toHexString()}`
                     )
                 })
                 .then((group) => {
@@ -693,7 +717,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -722,7 +746,7 @@ const handleSocketClientConnection = async (
                                 )
                             })
                     }
-                    throw new Error(`Unknown group ${id}`)
+                    throw new Error(`Unknown group ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -730,7 +754,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -753,11 +777,13 @@ const handleSocketClientConnection = async (
                             .then((stage) => {
                                 if (stage) return distributor.deleteGroup(id)
                                 throw new Error(
-                                    `User ${user.name} has no privileges to remove group ${id}`
+                                    `User ${
+                                        user.name
+                                    } has no privileges to remove group ${id.toHexString()}`
                                 )
                             })
                     }
-                    throw new Error(`Could not find and delete group ${id}`)
+                    throw new Error(`Could not find and delete group ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -765,7 +791,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -799,7 +825,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -830,7 +856,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -858,10 +884,12 @@ const handleSocketClientConnection = async (
                             return distributor.deleteCustomGroupPosition(id)
                         }
                         throw new Error(
-                            `User ${user.name} has no privileges to remove custom group position ${id}`
+                            `User ${
+                                user.name
+                            } has no privileges to remove custom group position ${id.toHexString()}`
                         )
                     }
-                    throw new Error(`Unknown custom group position ${id}`)
+                    throw new Error(`Unknown custom group position ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -869,7 +897,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -897,10 +925,12 @@ const handleSocketClientConnection = async (
                             return distributor.deleteCustomGroupVolume(id)
                         }
                         throw new Error(
-                            `User ${user.name} has no privileges to remove custom group volume ${id}`
+                            `User ${
+                                user.name
+                            } has no privileges to remove custom group volume ${id.toHexString()}`
                         )
                     }
-                    throw new Error(`Unknown custom group volume ${id}`)
+                    throw new Error(`Unknown custom group volume ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -908,7 +938,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -936,11 +966,13 @@ const handleSocketClientConnection = async (
                                     return distributor.updateStageMember(id, data)
                                 }
                                 throw new Error(
-                                    `User ${user.name} has no privileges to change stage member ${id}`
+                                    `User ${
+                                        user.name
+                                    } has no privileges to change stage member ${id.toHexString()}`
                                 )
                             })
                     }
-                    throw new Error(`Unknown stage member ${id}`)
+                    throw new Error(`Unknown stage member ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -948,7 +980,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -974,11 +1006,13 @@ const handleSocketClientConnection = async (
                                     return distributor.deleteStageMember(id)
                                 }
                                 throw new Error(
-                                    `User ${user.name} has no privileges to remove stage member ${id}`
+                                    `User ${
+                                        user.name
+                                    } has no privileges to remove stage member ${id.toHexString()}`
                                 )
                             })
                     }
-                    throw new Error(`Unknown stage member ${id}`)
+                    throw new Error(`Unknown stage member ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -986,7 +1020,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1019,7 +1053,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1052,7 +1086,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1080,10 +1114,12 @@ const handleSocketClientConnection = async (
                             return distributor.deleteCustomStageMemberPosition(id)
                         }
                         throw new Error(
-                            `User ${user.name} has no privileges to remove custom stage member position ${id}`
+                            `User ${
+                                user.name
+                            } has no privileges to remove custom stage member position ${id.toHexString()}`
                         )
                     }
-                    throw new Error(`Unknown custom stage member position ${id}`)
+                    throw new Error(`Unknown custom stage member position ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -1091,7 +1127,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1119,10 +1155,12 @@ const handleSocketClientConnection = async (
                             return distributor.deleteCustomStageMemberVolume(id)
                         }
                         throw new Error(
-                            `User ${user.name} has no privileges to remove custom stage member volume ${id}`
+                            `User ${
+                                user.name
+                            } has no privileges to remove custom stage member volume ${id.toHexString()}`
                         )
                     }
-                    throw new Error(`Unknown custom stage member volume ${id}`)
+                    throw new Error(`Unknown custom stage member volume ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -1130,7 +1168,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1159,11 +1197,13 @@ const handleSocketClientConnection = async (
                                     return distributor.updateStageDevice(id, data)
                                 }
                                 throw new Error(
-                                    `User ${user.name} has no privileges to change stage device ${id}`
+                                    `User ${
+                                        user.name
+                                    } has no privileges to change stage device ${id.toHexString()}`
                                 )
                             })
                     }
-                    throw new Error(`Unknown stage device ${id}`)
+                    throw new Error(`Unknown stage device ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -1171,7 +1211,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1197,11 +1237,13 @@ const handleSocketClientConnection = async (
                                     return distributor.deleteStageDevice(id)
                                 }
                                 throw new Error(
-                                    `User ${user.name} has no privileges to remove stage device ${id}`
+                                    `User ${
+                                        user.name
+                                    } has no privileges to remove stage device ${id.toHexString()}`
                                 )
                             })
                     }
-                    throw new Error(`Unknown stage device ${id}`)
+                    throw new Error(`Unknown stage device ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -1209,7 +1251,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1242,7 +1284,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1278,7 +1320,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1306,10 +1348,12 @@ const handleSocketClientConnection = async (
                             return distributor.deleteCustomStageDevicePosition(id)
                         }
                         throw new Error(
-                            `User ${user.name} has no privileges to remove custom stage device position ${id}`
+                            `User ${
+                                user.name
+                            } has no privileges to remove custom stage device position ${id.toHexString()}`
                         )
                     }
-                    throw new Error(`Unknown custom stage device position ${id}`)
+                    throw new Error(`Unknown custom stage device position ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -1317,7 +1361,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1345,10 +1389,12 @@ const handleSocketClientConnection = async (
                             return distributor.deleteCustomStageDeviceVolume(id)
                         }
                         throw new Error(
-                            `User ${user.name} has no privileges to remove custom stage device volume ${id}`
+                            `User ${
+                                user.name
+                            } has no privileges to remove custom stage device volume ${id.toHexString()}`
                         )
                     }
-                    throw new Error(`Unknown custom stage device volume ${id}`)
+                    throw new Error(`Unknown custom stage device volume ${id.toHexString()}`)
                 })
                 .then(() => {
                     if (fn) {
@@ -1356,7 +1402,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1371,7 +1417,11 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.SetCustomAudioTrackPosition,
             fn?: (error: string | null) => void
         ) => {
-            trace(`${user.name}: ${ClientDeviceEvents.SetCustomAudioTrackPosition}(${payload})`)
+            trace(
+                `${user.name}: ${ClientDeviceEvents.SetCustomAudioTrackPosition}(${JSON.stringify(
+                    payload
+                )})`
+            )
             const { audioTrackId, deviceId, x, y, z, rX, rY, rZ, directivity } = payload
             return distributor
                 .upsertCustomAudioTrackPosition(
@@ -1386,7 +1436,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1419,7 +1469,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1443,7 +1493,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1467,7 +1517,7 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
                         fn(e.message)
                     }
@@ -1485,9 +1535,15 @@ const handleSocketClientConnection = async (
             const groupId = payload.groupId ? new ObjectId(payload.groupId) : undefined
             return distributor
                 .joinStage(user._id, stageId, groupId, payload.password)
-                .then(() => trace(`${user.name} joined stage ${stageId} and group ${groupId}`))
+                .then(() =>
+                    trace(
+                        `${
+                            user.name
+                        } joined stage ${stageId.toHexString()} and group ${groupId.toHexString()}`
+                    )
+                )
                 .then(() => fn && fn())
-                .catch((e) => {
+                .catch((e: Error) => {
                     error(e)
                     if (fn) fn(e.message)
                 })
@@ -1504,9 +1560,9 @@ const handleSocketClientConnection = async (
                 }
                 return undefined
             })
-            .catch((e) => {
+            .catch((e: Error) => {
                 if (fn) {
-                    fn(e)
+                    fn(e.message)
                 }
                 error(e)
             })
@@ -1520,16 +1576,16 @@ const handleSocketClientConnection = async (
             const stageId = new ObjectId(payload)
             return distributor
                 .leaveStageForGood(user._id, stageId)
-                .then(() => trace(`${user.name} left stage ${stageId} for good`))
+                .then(() => trace(`${user.name} left stage ${stageId.toHexString()} for good`))
                 .then(() => {
                     if (fn) {
                         return fn(null)
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
-                        fn(e)
+                        fn(e.message)
                     }
                     error(e)
                 })
@@ -1553,9 +1609,9 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
-                        fn(e)
+                        fn(e.message)
                     }
                     error(e)
                 })
@@ -1577,9 +1633,9 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
-                        fn(e)
+                        fn(e.message)
                     }
                     error(e)
                 })
@@ -1603,9 +1659,9 @@ const handleSocketClientConnection = async (
                     }
                     return undefined
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     if (fn) {
-                        fn(e)
+                        fn(e.message)
                     }
                     error(e)
                 })
@@ -1619,11 +1675,13 @@ const handleSocketClientConnection = async (
     Distributor.sendToDevice(socket, ServerDeviceEvents.Ready)
     if (device) {
         trace(
-            `Registered socket handler for user ${user.name} and device ${device._id} at socket ${socket.id}`
+            `Registered socket handler for user ${
+                user.name
+            } and device ${device._id.toHexString()} at socket ${socket.id}`
         )
     } else {
         trace(`Registered socket handler for user ${user.name}  at socket ${socket.id}`)
     }
     return device
 }
-export default handleSocketClientConnection
+export { handleSocketClientConnection }

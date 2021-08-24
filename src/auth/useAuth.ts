@@ -1,12 +1,11 @@
 import fetch from 'node-fetch'
 import { ObjectId } from 'mongodb'
 import { ErrorCodes, User } from '@digitalstage/api-types'
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { HttpRequest } from 'teckos/uws'
 import { AUTH_URL, RESTRICT_STAGE_CREATION } from '../env'
-import Distributor from '../distributor/Distributor'
-import useLogger from '../useLogger'
-import AuthUser from './AuthUser'
+import { Distributor } from '../distributor/Distributor'
+import { useLogger } from '../useLogger'
+import { AuthUser } from './AuthUser'
 
 const { trace, error } = useLogger('auth')
 
@@ -18,12 +17,17 @@ const getAuthUserByToken = (token: string): Promise<AuthUser> =>
         },
     }).then((result) => {
         if (result.ok) {
-            return result.json()
+            return result.json() as Promise<AuthUser>
         }
         throw new Error(result.statusText)
     })
 
-const useAuth = (distributor: Distributor) => {
+const useAuth = (
+    distributor: Distributor
+): {
+    authorizeHttpRequest: (req: HttpRequest) => Promise<User<ObjectId>>
+    getUserByToken: (token: string) => Promise<User<ObjectId>>
+} => {
     const getUserByToken = (reqToken: string): Promise<User<ObjectId>> => {
         let token = reqToken
         if (reqToken.length > 7 && reqToken.substring(0, 7) === 'Bearer ') {
@@ -70,4 +74,4 @@ const useAuth = (distributor: Distributor) => {
         authorizeHttpRequest,
     }
 }
-export default useAuth
+export { useAuth }

@@ -3,11 +3,11 @@ import { ObjectId } from 'mongodb'
 import { ClientDeviceEvents, Payloads } from '@digitalstage/api-types'
 import { UWSSocket } from 'teckos'
 import { API_KEY } from '../env'
-import useLogger from '../useLogger'
-import handleSocketClientConnection from './handleSocketClientConnection'
-import Distributor from '../distributor/Distributor'
-import useAuth from '../auth/useAuth'
-import handleSocketRouterConnection from './handleSocketRouterConnection'
+import { useLogger } from '../useLogger'
+import { handleSocketClientConnection } from './handleSocketClientConnection'
+import { Distributor } from '../distributor/Distributor'
+import { useAuth } from '../auth/useAuth'
+import { handleSocketRouterConnection } from './handleSocketRouterConnection'
 
 const { error, warn, trace } = useLogger('socket')
 
@@ -23,6 +23,7 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
 
     socket.on(ClientDeviceEvents.ConnectAsRouter, (payload: Payloads.ConnectAsRouter) => {
         const { apiKey, router } = payload
+        const url = router.url && typeof router.url === 'string' ? router.url : ''
         if (apiKey) {
             // A router is trying to connect
             if (apiKey === API_KEY) {
@@ -32,12 +33,12 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                 })
             }
             error(
-                `Router ${router.url} with IP ${getIP(
+                `Router ${url} with IP ${getIP(
                     socket
                 )} tried to sign in with wrong api key ${apiKey}, should be ${API_KEY}`
             )
         } else {
-            error(`Router ${router.url} dit not provide any api key`)
+            error(`Router ${url} dit not provide any api key`)
         }
         return socket.disconnect()
     })
@@ -46,14 +47,15 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
         const { token, device } = payload
         if (token) {
             trace('New connection with token')
+            const soundCardId =
+                device.soundCardId && typeof device.soundCardId === 'string'
+                    ? new ObjectId(device.soundCardId)
+                    : null
             return getUserByToken(token)
                 .then((user) =>
                     handleSocketClientConnection(distributor, socket, user, {
                         ...device,
-                        availableSoundCardIds: device.availableSoundCardIds
-                            ? device.availableSoundCardIds.map((id) => new ObjectId(id))
-                            : [],
-                        soundCardId: device.soundCardId ? new ObjectId(device.soundCardId) : null,
+                        soundCardId,
                         userId: user._id,
                     })
                 )
@@ -67,4 +69,4 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
         return socket.disconnect()
     })
 }
-export default handleSocketConnection
+export { handleSocketConnection }
