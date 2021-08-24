@@ -37,6 +37,7 @@ const logger = pino(
                 send: logflareBrowserStream,
             },
         },
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'trace',
     },
     logflareWriteStream
 )
