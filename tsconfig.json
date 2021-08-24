@@ -4,6 +4,7 @@
     "target": "es6",
     "sourceMap": true,
     "inlineSources": true,
+    "esModuleInterop": true,
     //"sourceRoot": "/",
     "outDir": "dist"
   },
@@ -15,7 +16,6 @@
   ],
   "exclude": [
     "node_modules",
-    "./dist",
-    "backup"
+    "./dist"
   ]
 }

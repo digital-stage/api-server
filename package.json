@@ -5,10 +5,10 @@
   "description": "Stage and device orchestration server for headless audio clients",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "DEBUG=server*,teckos* nodemon --watch './src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "dev": "NODE_ENV=development nodemon --watch './src/**/*.ts' --exec 'ts-node' src/index.ts",
     "lint": "npx eslint ./src --ext .js,.ts --fix",
-    "build": "tsc",
-    "start": "DEBUG=* node ./dist/index.js"
+    "build": "NODE_ENV=production tsc",
+    "start": "NODE_ENV=production node ./dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -34,6 +34,7 @@
     "@types/mongodb": "^4.0.7",
     "@types/node": "^16.7.1",
     "@types/node-fetch": "^2.5.12",
+    "@types/pino": "^6.3.11",
     "@typescript-eslint/eslint-plugin": "^4.29.3",
     "@typescript-eslint/parser": "^4.29.3",
     "eslint": "^7.32.0",
@@ -61,6 +62,7 @@
     "mongodb": "^4.1.0",
     "nanoid": "^3.1.25",
     "node-fetch": "^2.6.1",
+    "pino": "^6.13.1",
     "pino-logflare": "^0.3.12",
     "teckos": "*",
     "uncaught": "^0.0.5"

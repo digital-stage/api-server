@@ -1,5 +1,5 @@
 import { config } from 'dotenv'
-import * as dotenvExpand from 'dotenv-expand'
+import dotenvExpand from 'dotenv-expand'
 import * as fs from 'fs'
 
 const getEnvPath = () => {
@@ -12,8 +12,18 @@ const envPath = getEnvPath()
 const env = config({ path: envPath })
 dotenvExpand(env)
 
-const { MONGO_URL, REDIS_URL, MONGO_DB, MONGO_CA, PORT, AUTH_URL, API_KEY, SENTRY_DSN } =
-    process.env
+const {
+    MONGO_URL,
+    REDIS_URL,
+    MONGO_DB,
+    MONGO_CA,
+    PORT,
+    AUTH_URL,
+    API_KEY,
+    SENTRY_DSN,
+    LOGFLARE_API_KEY,
+    LOGFLARE_SOURCE_TOKEN,
+} = process.env
 
 // eslint-disable-next-line no-console
 console.info(`Loaded env from ${envPath}`)
@@ -21,7 +31,6 @@ console.info(`Loaded env from ${envPath}`)
 console.info(`Using auth server at ${AUTH_URL}`)
 
 const USE_REDIS = process.env.USE_REDIS && process.env.USE_REDIS === 'true'
-const USE_SENTRY = process.env.USE_SENTRY && process.env.USE_SENTRY === 'true'
 const DEBUG_EVENTS = process.env.DEBUG_EVENTS && process.env.DEBUG_EVENTS === 'true'
 const DEBUG_PAYLOAD = process.env.DEBUG_PAYLOAD && process.env.DEBUG_PAYLOAD === 'true'
 const RESTRICT_STAGE_CREATION =
@@ -38,7 +47,8 @@ export {
     DEBUG_EVENTS,
     AUTH_URL,
     MONGO_CA,
-    USE_SENTRY,
     SENTRY_DSN,
+    LOGFLARE_API_KEY,
+    LOGFLARE_SOURCE_TOKEN,
     RESTRICT_STAGE_CREATION,
 }

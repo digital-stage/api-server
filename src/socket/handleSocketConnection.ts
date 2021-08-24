@@ -32,7 +32,7 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                     _id: undefined,
                 })
             }
-            error(
+            trace(
                 `Router ${url} with IP ${getIP(
                     socket
                 )} tried to sign in with wrong api key ${apiKey}, should be ${API_KEY}`

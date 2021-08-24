@@ -1,12 +1,10 @@
-/* eslint-disable no-console,@typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call */
-import debug, { Debugger } from 'debug'
+/* eslint-disable no-console,@typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-explicit-any,@typescript-eslint/restrict-template-expressions */
 import * as Sentry from '@sentry/node'
 import * as uncaught from 'uncaught'
 import * as Tracing from '@sentry/tracing'
-// import { CaptureConsole, RewriteFrames } from '@sentry/integrations'
-import { SENTRY_DSN, USE_SENTRY } from './env'
-
-const d = debug('server')
+import { LOGFLARE_API_KEY, LOGFLARE_SOURCE_TOKEN, SENTRY_DSN } from './env'
+import pino from 'pino'
+import { createWriteStream } from 'pino-logflare'
 
 declare global {
     // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -17,23 +15,42 @@ declare global {
     }
 }
 
+let logflareWriteStream //, logflareBrowserStream
+if (!!LOGFLARE_API_KEY && !!LOGFLARE_SOURCE_TOKEN) {
+    // create pino-logflare stream
+    logflareWriteStream = createWriteStream({
+        apiKey: LOGFLARE_API_KEY,
+        sourceToken: LOGFLARE_SOURCE_TOKEN,
+    })
+    // create pino-logflare browser stream
+    /*logflareBrowserStream = createPinoBrowserSend({
+        apiKey: LOGFLARE_API_KEY,
+        sourceToken: LOGFLARE_SOURCE_TOKEN,
+    })*/
+}
+
+// create pino loggger
+const logger = pino(
+    {
+        /*
+        browser: {
+            transmit: {
+                send: logflareBrowserStream,
+            },
+        },*/
+    },
+    logflareWriteStream
+)
+
 uncaught.start()
 
-if (USE_SENTRY) {
-    d('Using Sentry for logging')
+if (!!SENTRY_DSN) {
+    console.info('Using Sentry for logging')
     Sentry.init({
         dsn: SENTRY_DSN,
         release: process.env.RELEASE,
 
-        integrations: [
-            new Tracing.Integrations.Mongo(),
-            /* new CaptureConsole({
-                levels: ['warn', 'error'],
-            }),
-            new RewriteFrames({
-                root: global.__rootdir__,
-            }), */
-        ],
+        integrations: [new Tracing.Integrations.Mongo()],
 
         // We recommend adjusting this value in production, or using tracesSampler
         // for finer control
@@ -49,47 +66,49 @@ if (USE_SENTRY) {
         Sentry.captureException(e)
     })
 } else {
-    d('Using console for logging')
-    const reportError = d.extend('error')
-    reportError.log = console.error.bind(console)
+    console.info('Using console for logging')
     uncaught.addListener((e) => {
-        reportError('Uncaught error or rejection: ', e.message)
-        reportError('Trace: ', e.trace)
+        logger.error('Uncaught error or rejection: ', e.message)
+        logger.error('Trace: ', e.trace)
     })
 }
 
 const useLogger = (
     context: string
 ): {
-    info: Debugger
-    trace: Debugger
-    warn: Debugger
-    error: Debugger
+    info: (message: any) => void
+    trace: (message: any) => void
+    warn: (message: any) => void
+    error: (message: any) => void
 } => {
     let namespace = context
     if (namespace.length > 0) {
         namespace += ':'
     }
-    const info = d.extend(`${namespace}info`)
-    info.log = console.info.bind(console)
-    const trace = d.extend(`${namespace}trace`)
-    trace.log = console.debug.bind(console)
-    let warn
-    let error
-    if (USE_SENTRY) {
-        warn = (message: string) => console.warn(`${namespace}:warn ${message}`)
-        error = (message: string | Error) => {
+    const info = (message: any): void => {
+        logger.info(`${namespace}info ${message}`)
+    }
+    const trace = (message: any): void => {
+        logger.trace(`${namespace}trace ${message}`)
+    }
+    let warn: (message: any) => void
+    let error: (message: any) => void
+    if (SENTRY_DSN) {
+        warn = (message: any) => console.warn(`${namespace}warn ${message}`)
+        error = (message: any) => {
             if (message) {
-                console.error(`${namespace}:error ${message.toString()}`)
+                console.error(`${namespace}error ${message.toString()}`)
                 console.trace(message)
                 Sentry.captureException(message)
             }
         }
     } else {
-        warn = d.extend(`${namespace}warn`)
-        warn.log = console.warn.bind(console)
-        error = d.extend(`${namespace}error`)
-        error.log = console.error.bind(console)
+        warn = (message: string) => {
+            logger.warn(`${namespace}warn ${message}`)
+        }
+        error = (message: string) => {
+            logger.error(`${namespace}error ${message}`)
+        }
     }
     return {
         info,
