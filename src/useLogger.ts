@@ -4,7 +4,7 @@ import * as uncaught from 'uncaught'
 import * as Tracing from '@sentry/tracing'
 import { LOGFLARE_API_KEY, LOGFLARE_SOURCE_TOKEN, SENTRY_DSN } from './env'
 import pino from 'pino'
-import { createWriteStream } from 'pino-logflare'
+import { createPinoBrowserSend, createWriteStream } from 'pino-logflare'
 
 declare global {
     // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -15,7 +15,7 @@ declare global {
     }
 }
 
-let logflareWriteStream //, logflareBrowserStream
+let logflareWriteStream, logflareBrowserStream
 if (!!LOGFLARE_API_KEY && !!LOGFLARE_SOURCE_TOKEN) {
     // create pino-logflare stream
     logflareWriteStream = createWriteStream({
@@ -23,21 +23,20 @@ if (!!LOGFLARE_API_KEY && !!LOGFLARE_SOURCE_TOKEN) {
         sourceToken: LOGFLARE_SOURCE_TOKEN,
     })
     // create pino-logflare browser stream
-    /*logflareBrowserStream = createPinoBrowserSend({
+    logflareBrowserStream = createPinoBrowserSend({
         apiKey: LOGFLARE_API_KEY,
         sourceToken: LOGFLARE_SOURCE_TOKEN,
-    })*/
+    })
 }
 
 // create pino loggger
 const logger = pino(
     {
-        /*
         browser: {
             transmit: {
                 send: logflareBrowserStream,
             },
-        },*/
+        },
     },
     logflareWriteStream
 )
