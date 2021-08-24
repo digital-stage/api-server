@@ -7,7 +7,7 @@ import { Distributor } from '../distributor/Distributor'
 import { useLogger } from '../useLogger'
 import { AuthUser } from './AuthUser'
 
-const { trace, error } = useLogger('auth')
+const { debug, error } = useLogger('auth')
 
 const getAuthUserByToken = (token: string): Promise<AuthUser> =>
     fetch(`${AUTH_URL}/profile`, {
@@ -37,7 +37,7 @@ const useAuth = (
             .then((authUser) =>
                 distributor.readUserByUid(authUser._id).then((user) => {
                     if (!user) {
-                        trace(`Creating new user ${authUser.name}`)
+                        debug(`Creating new user ${authUser.name}`)
                         return distributor
                             .createUser({
                                 uid: authUser._id,

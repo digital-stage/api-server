@@ -39,7 +39,7 @@ import { generateColor } from '../utils/generateColor'
 import { getDistance } from '../utils/getDistance'
 import { Collections } from './Collections'
 
-const { error, trace, warn } = useLogger('distributor')
+const { error, debug, warn } = useLogger('distributor')
 
 ObjectId.cacheHexString = true
 
@@ -142,7 +142,7 @@ class Distributor extends EventEmitter.EventEmitter {
             this.readDevicesByApiServer(serverAddress).then((devices) =>
                 devices.map((device) =>
                     this.deleteDevice(device._id).then(() =>
-                        trace(
+                        debug(
                             `cleanUp(${serverAddress}): Removed device ${device._id.toHexString()}`
                         )
                     )
@@ -151,7 +151,7 @@ class Distributor extends EventEmitter.EventEmitter {
             this.readRoutersByServer(serverAddress).then((routers) =>
                 routers.map((router) =>
                     this.deleteRouter(router._id).then(() =>
-                        trace(
+                        debug(
                             `cleanUp(${serverAddress}): Removed router ${router._id.toHexString()}`
                         )
                     )
@@ -197,7 +197,7 @@ class Distributor extends EventEmitter.EventEmitter {
 
     /* ROUTER */
     createRouter = (initial: Partial<Router<ObjectId>>): Promise<Router<ObjectId>> => {
-        trace(`createRouter(): Creating router with initial data: ${JSON.stringify(initial)}`)
+        debug(`createRouter(): Creating router with initial data: ${JSON.stringify(initial)}`)
         const { _id, ...initialWithoutId } = initial
         const doc = {
             countryCode: 'GLOBAL',
@@ -257,7 +257,7 @@ class Distributor extends EventEmitter.EventEmitter {
             .find({ [`types.${type}`]: { $gt: 0 } })
             .toArray()
             .then((routers) => {
-                trace(`Found ${routers.length} available routers for type ${type}`)
+                debug(`Found ${routers.length} available routers for type ${type}`)
                 if (routers.length > 1) {
                     let router = routers[0]
                     if (preferredPosition) {
@@ -279,7 +279,7 @@ class Distributor extends EventEmitter.EventEmitter {
                             }
                         })
                     }
-                    trace(`Found nearest router ${router._id.toHexString()}`)
+                    debug(`Found nearest router ${router._id.toHexString()}`)
                     return router
                 }
                 if (routers.length === 1) {
@@ -334,14 +334,14 @@ class Distributor extends EventEmitter.EventEmitter {
                         .then((stages) =>
                             Promise.all(
                                 stages.map((stage) => {
-                                    trace(`Found ${stages.length}`)
+                                    debug(`Found ${stages.length}`)
                                     if (
                                         stage.audioRouter &&
                                         stage.videoRouter &&
                                         stage.audioRouter.equals(id) &&
                                         stage.videoRouter.equals(id)
                                     ) {
-                                        trace(
+                                        debug(
                                             `Deallocate video and audio router ${id.toHexString()} from stage ${stage._id.toHexString()}`
                                         )
                                         return this.updateStage(stage._id, {
@@ -350,7 +350,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                         })
                                     }
                                     if (stage.audioRouter && stage.audioRouter.equals(id)) {
-                                        trace(
+                                        debug(
                                             `Deallocate audio router ${id.toHexString()} from stage ${stage._id.toHexString()}`
                                         )
                                         return this.updateStage(stage._id, {
@@ -358,7 +358,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                         })
                                     }
                                     if (stage.videoRouter && stage.videoRouter.equals(id)) {
-                                        trace(
+                                        debug(
                                             `Deallocate video router ${id.toHexString()} from stage ${stage._id.toHexString()}`
                                         )
                                         return this.updateStage(stage._id, {
@@ -572,7 +572,7 @@ class Distributor extends EventEmitter.EventEmitter {
             })
             .then((device) => {
                 if (device.requestSession) {
-                    trace('Generating UUID session for new device')
+                    debug('Generating UUID session for new device')
                     this._db
                         .collection<Device<ObjectId>>(Collections.DEVICES)
                         .updateOne(
@@ -589,7 +589,7 @@ class Distributor extends EventEmitter.EventEmitter {
                         uuid: device._id.toHexString(),
                     }
                 }
-                trace('no generation')
+                debug('no generation')
                 return device
             })
             .then((device) => {
@@ -2759,7 +2759,7 @@ class Distributor extends EventEmitter.EventEmitter {
         if (previousStageMemberId && !previousStageMemberId.equals(stageMember._id)) {
             await this.updateStageMember(previousStageMemberId, { active: false })
         }
-        trace(`joinStage: ${Date.now() - startTime}ms`)
+        debug(`joinStage: ${Date.now() - startTime}ms`)
     }
 
     /**
@@ -2788,7 +2788,7 @@ class Distributor extends EventEmitter.EventEmitter {
             // Set old stage member offline (async!)
             await this.updateStageMember(previousObjectId, { active: false })
         }
-        trace(`leaveStage: ${Date.now() - startTime}ms`)
+        debug(`leaveStage: ${Date.now() - startTime}ms`)
     }
 
     /**
@@ -3093,7 +3093,7 @@ class Distributor extends EventEmitter.EventEmitter {
     assignRoutersToStage = async (stage: Stage<ObjectId>): Promise<void> => {
         if (stage.videoRouter === null || stage.audioRouter === null) {
             if (stage.videoType === stage.audioType) {
-                trace(
+                debug(
                     `Seeking for same router for stage ${stage.name}, since type ${stage.videoType} is same for both`
                 )
                 return this.readNearestRouter(stage.videoType, stage.preferredPosition).then(
@@ -3174,9 +3174,9 @@ class Distributor extends EventEmitter.EventEmitter {
     static sendToDevice = (socket: ITeckosSocket, event: string, payload?: unknown): void => {
         if (DEBUG_EVENTS) {
             if (DEBUG_PAYLOAD) {
-                trace(`SEND TO DEVICE '${socket.id}' ${event}: ${JSON.stringify(payload)}`)
+                debug(`SEND TO DEVICE '${socket.id}' ${event}: ${JSON.stringify(payload)}`)
             } else {
-                trace(`SEND TO DEVICE '${socket.id}' ${event}`)
+                debug(`SEND TO DEVICE '${socket.id}' ${event}`)
             }
         }
         socket.emit(event, payload)
@@ -3186,9 +3186,9 @@ class Distributor extends EventEmitter.EventEmitter {
         const groupId = userId.toHexString()
         if (DEBUG_EVENTS) {
             if (DEBUG_PAYLOAD) {
-                trace(`SEND TO USER '${groupId}' ${event}: ${JSON.stringify(payload)}`)
+                debug(`SEND TO USER '${groupId}' ${event}: ${JSON.stringify(payload)}`)
             } else {
-                trace(`SEND TO USER '${groupId}' ${event}`)
+                debug(`SEND TO USER '${groupId}' ${event}`)
             }
         }
         this._io.to(userId.toHexString(), event, payload)
@@ -3205,9 +3205,9 @@ class Distributor extends EventEmitter.EventEmitter {
                 const id = device._id.toHexString()
                 if (DEBUG_EVENTS) {
                     if (DEBUG_PAYLOAD) {
-                        trace(`SEND TO SINGLE SOCKET '${id}' ${event}: ${JSON.stringify(payload)}`)
+                        debug(`SEND TO SINGLE SOCKET '${id}' ${event}: ${JSON.stringify(payload)}`)
                     } else {
-                        trace(`SEND TO SINGLE SOCKET '${id}' ${event}`)
+                        debug(`SEND TO SINGLE SOCKET '${id}' ${event}`)
                     }
                 }
                 this._io.to(id, event, payload)
@@ -3218,9 +3218,9 @@ class Distributor extends EventEmitter.EventEmitter {
         const groupId = routerId.toHexString()
         if (DEBUG_EVENTS) {
             if (DEBUG_PAYLOAD) {
-                trace(`SEND TO ROUTER '${groupId}' ${event}: ${JSON.stringify(payload)}`)
+                debug(`SEND TO ROUTER '${groupId}' ${event}: ${JSON.stringify(payload)}`)
             } else {
-                trace(`SEND TO ROUTER '${groupId}' ${event}`)
+                debug(`SEND TO ROUTER '${groupId}' ${event}`)
             }
         }
         this._io.to(groupId, event, payload)
@@ -3229,9 +3229,9 @@ class Distributor extends EventEmitter.EventEmitter {
     sendToAll = (event: string, payload?: unknown): void => {
         if (DEBUG_EVENTS) {
             if (DEBUG_PAYLOAD) {
-                trace(`SEND TO ALL ${event}: ${JSON.stringify(payload)}`)
+                debug(`SEND TO ALL ${event}: ${JSON.stringify(payload)}`)
             } else {
-                trace(`SEND TO ALL ${event}`)
+                debug(`SEND TO ALL ${event}`)
             }
         }
         this._io.toAll(event, payload)

@@ -9,7 +9,7 @@ import { Distributor } from '../distributor/Distributor'
 import { useAuth } from '../auth/useAuth'
 import { handleSocketRouterConnection } from './handleSocketRouterConnection'
 
-const { error, warn, trace } = useLogger('socket')
+const { error, warn, debug, trace } = useLogger('socket')
 
 const getIP = (socket: ITeckosSocket): string => {
     const uwsSocket = socket as UWSSocket
@@ -46,7 +46,7 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
     socket.on(ClientDeviceEvents.ConnectWithToken, (payload: Payloads.ConnectWithToken) => {
         const { token, device } = payload
         if (token) {
-            trace('New connection with token')
+            debug('New connection with token')
             const soundCardId =
                 device.soundCardId && typeof device.soundCardId === 'string'
                     ? new ObjectId(device.soundCardId)

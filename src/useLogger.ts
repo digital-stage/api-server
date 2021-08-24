@@ -37,7 +37,7 @@ const logger = pino(
                 send: logflareBrowserStream,
             },
         },
-        level: process.env.NODE_ENV === 'production' ? 'info' : 'trace',
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     },
     logflareWriteStream
 )
@@ -77,6 +77,7 @@ const useLogger = (
     context: string
 ): {
     info: (message: any) => void
+    debug: (message: any) => void
     trace: (message: any) => void
     warn: (message: any) => void
     error: (message: any) => void
@@ -90,6 +91,9 @@ const useLogger = (
     }
     const trace = (message: any): void => {
         logger.trace(`${namespace}trace ${message}`)
+    }
+    const debug = (message: any): void => {
+        logger.debug(`${namespace}debug ${message}`)
     }
     let warn: (message: any) => void
     let error: (message: any) => void
@@ -112,6 +116,7 @@ const useLogger = (
     }
     return {
         info,
+        debug,
         trace,
         warn,
         error,

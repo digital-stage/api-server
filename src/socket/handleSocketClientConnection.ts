@@ -16,7 +16,7 @@ import {
 import { useLogger } from '../useLogger'
 import { Distributor } from '../distributor/Distributor'
 
-const { error, trace } = useLogger('socket:client')
+const { error, debug } = useLogger('socket:client')
 
 const handleSocketClientConnection = async (
     distributor: Distributor,
@@ -31,7 +31,7 @@ const handleSocketClientConnection = async (
             device = await distributor.readDeviceByUserAndUUID(user._id, initialDevice.uuid)
             if (device) {
                 // Update status
-                trace(`Found existing device with uuid ${initialDevice.uuid}`)
+                debug(`Found existing device with uuid ${initialDevice.uuid}`)
                 await distributor.updateDevice(user._id, device._id, {
                     ...initialDevice,
                     online: true,
@@ -69,10 +69,10 @@ const handleSocketClientConnection = async (
                         ),
                 ])
                 if (device.uuid) {
-                    trace(`Set device ${device._id.toHexString()} offline`)
+                    debug(`Set device ${device._id.toHexString()} offline`)
                     return await distributor.updateDevice(user._id, device._id, { online: false })
                 }
-                trace(`Removing device ${device._id.toHexString()}`)
+                debug(`Removing device ${device._id.toHexString()}`)
                 return await distributor.deleteDevice(device._id)
             } catch (err) {
                 return error(err)
@@ -104,7 +104,7 @@ const handleSocketClientConnection = async (
                 payload: ClientDevicePayloads.CreateAudioTrack,
                 fn?: (error: string | null, track?: AudioTrack<ObjectId>) => void
             ) => {
-                trace(
+                debug(
                     `${user.name}: ${ClientDeviceEvents.CreateAudioTrack}(${JSON.stringify(
                         payload
                     )})`
@@ -148,7 +148,7 @@ const handleSocketClientConnection = async (
                 payload: ClientDevicePayloads.ChangeAudioTrack,
                 fn?: (error: string | null) => void
             ) => {
-                trace(
+                debug(
                     `${user.name}: ${ClientDeviceEvents.ChangeAudioTrack}(${JSON.stringify(
                         payload
                     )})`
@@ -190,7 +190,7 @@ const handleSocketClientConnection = async (
                 payload: ClientDevicePayloads.RemoveAudioTrack,
                 fn?: (error: string | null) => void
             ) => {
-                trace(
+                debug(
                     `${user.name}: ${ClientDeviceEvents.RemoveAudioTrack}(${JSON.stringify(
                         payload
                     )})`
@@ -220,7 +220,7 @@ const handleSocketClientConnection = async (
                 payload: ClientDevicePayloads.CreateVideoTrack,
                 fn?: (error: string | null, track?: VideoTrack<ObjectId>) => void
             ) => {
-                trace(
+                debug(
                     `${user.name}: ${ClientDeviceEvents.CreateVideoTrack}(${JSON.stringify(
                         payload
                     )})`
@@ -264,7 +264,7 @@ const handleSocketClientConnection = async (
                 payload: ClientDevicePayloads.ChangeVideoTrack,
                 fn?: (error: string | null) => void
             ) => {
-                trace(
+                debug(
                     `${user.name}: ${ClientDeviceEvents.ChangeVideoTrack}(${JSON.stringify(
                         payload
                     )})`
@@ -306,7 +306,7 @@ const handleSocketClientConnection = async (
                 payload: ClientDevicePayloads.RemoveVideoTrack,
                 fn?: (error: string | null) => void
             ) => {
-                trace(
+                debug(
                     `${user.name}: ${ClientDeviceEvents.RemoveVideoTrack}(${JSON.stringify(
                         payload
                     )})`
@@ -334,7 +334,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.ChangeUser,
         (payload: ClientDevicePayloads.ChangeUser, fn: (error: string | null) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.ChangeUser}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.ChangeUser}(${JSON.stringify(payload)})`)
             return distributor
                 .updateUser(new ObjectId(user._id), payload)
                 .then(() => {
@@ -352,7 +352,7 @@ const handleSocketClientConnection = async (
         }
     )
     socket.on(ClientDeviceEvents.RemoveUser, (fn: (error: string | null) => void) => {
-        trace(`${user.name}: ${ClientDeviceEvents.RemoveUser}`)
+        debug(`${user.name}: ${ClientDeviceEvents.RemoveUser}`)
         return distributor
             .deleteUser(user._id)
             .then(() => {
@@ -370,7 +370,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.ChangeDevice,
         (payload: ClientDevicePayloads.ChangeDevice, fn?: (error: string | null) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.ChangeDevice}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.ChangeDevice}(${JSON.stringify(payload)})`)
             const { _id, ...data } = payload
             const id = new ObjectId(_id)
             return distributor
@@ -394,7 +394,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.RemoveDevice,
         (payload: ClientDevicePayloads.RemoveDevice, fn?: (error: string | null) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.RemoveDevice}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.RemoveDevice}(${JSON.stringify(payload)})`)
             const id = new ObjectId(payload)
             return distributor
                 .readDeviceByUser(id, user._id)
@@ -425,7 +425,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.SetSoundCard,
             fn?: (error: string | null, id?: ObjectId) => void
         ) => {
-            trace(`${user.name}: ${ClientDeviceEvents.SetSoundCard}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.SetSoundCard}(${JSON.stringify(payload)})`)
             const { uuid, ...update } = payload
             if (!uuid || uuid.length === 0) {
                 if (fn) {
@@ -456,7 +456,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.ChangeSoundCard,
             fn?: (error: string | null, id?: ObjectId) => void
         ) => {
-            trace(`${user.name}: ${ClientDeviceEvents.ChangeSoundCard}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.ChangeSoundCard}(${JSON.stringify(payload)})`)
             const { _id, userId, ...update } = payload
             return distributor
                 .updateSoundCard(new ObjectId(_id), update)
@@ -477,7 +477,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.SendChatMessage,
         (payload: ClientDevicePayloads.SendChatMessage) => {
-            trace(`${user.name}: ${ClientDeviceEvents.SendChatMessage}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.SendChatMessage}(${JSON.stringify(payload)})`)
             return distributor
                 .readUser(user._id)
                 .then((currentUser) => {
@@ -578,7 +578,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.CreateStage,
             fn: (error: string | null, stage?: Stage<ObjectId>) => void
         ) => {
-            trace(`${user.name}: ${ClientDeviceEvents.CreateStage}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.CreateStage}(${JSON.stringify(payload)})`)
             const admins =
                 payload?.admins && Array.isArray(payload.admins)
                     ? payload.admins.map((admin) => new ObjectId(admin))
@@ -618,7 +618,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.ChangeStage,
         (payload: ClientDevicePayloads.ChangeStage, fn: (error: string | null) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.ChangeStage}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.ChangeStage}(${JSON.stringify(payload)})`)
             const { _id, videoRouter, audioRouter, ...safePayload } = payload
             const id = new ObjectId(_id)
             return distributor
@@ -650,7 +650,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.RemoveStage,
         (payload: ClientDevicePayloads.RemoveStage, fn?: (error: string | null) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.RemoveStage}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.RemoveStage}(${JSON.stringify(payload)})`)
             const id = new ObjectId(payload)
             return distributor
                 .readAdministratedStage(user._id, id)
@@ -682,7 +682,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.CreateGroup,
             fn?: (error: string | null, group?: Group<ObjectId>) => void
         ) => {
-            trace(`${user.name}: ${ClientDeviceEvents.CreateGroup}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.CreateGroup}(${JSON.stringify(payload)})`)
             const stageId = new ObjectId(payload.stageId)
             distributor
                 .readAdministratedStage(user._id, stageId)
@@ -728,7 +728,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.ChangeGroup,
         (payload: ClientDevicePayloads.ChangeGroup, fn?: (error: string | null) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.ChangeGroup}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.ChangeGroup}(${JSON.stringify(payload)})`)
             const { _id, stageId, ...data } = payload
             const id = new ObjectId(_id)
             return distributor
@@ -765,7 +765,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.RemoveGroup,
         (payload: ClientDevicePayloads.RemoveGroup, fn?: (error: string | null) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.RemoveGroup}(${JSON.stringify(payload)})`)
+            debug(`${user.name}: ${ClientDeviceEvents.RemoveGroup}(${JSON.stringify(payload)})`)
             // REMOVE GROUP
             const id = new ObjectId(payload)
             return distributor
@@ -806,7 +806,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.SetCustomGroupPosition,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.SetCustomGroupPosition}(${JSON.stringify(
                     payload
                 )})`
@@ -839,7 +839,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.SetCustomGroupVolume,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.SetCustomGroupVolume}(${JSON.stringify(
                     payload
                 )})`
@@ -870,7 +870,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.RemoveCustomGroupPosition,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.RemoveCustomGroupPosition}(${JSON.stringify(
                     payload
                 )})`
@@ -911,7 +911,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.RemoveCustomGroupVolume,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.RemoveCustomGroupVolume}(${JSON.stringify(
                     payload
                 )})`
@@ -950,7 +950,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.ChangeStageMember,
         (payload: ClientDevicePayloads.ChangeStageMember, fn?: (error: string | null) => void) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.ChangeStageMember}(${JSON.stringify(payload)})`
             )
             const { _id, stageId, groupId, userId, ...data } = payload
@@ -991,7 +991,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.RemoveStageMember,
         (payload: ClientDevicePayloads.RemoveStageMember, fn?: (error: string | null) => void) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.RemoveStageMember}(${JSON.stringify(payload)})`
             )
             const id = new ObjectId(payload)
@@ -1034,7 +1034,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.SetCustomStageMemberPosition,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.SetCustomStageMemberPosition}(${JSON.stringify(
                     payload
                 )})`
@@ -1067,7 +1067,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.SetCustomStageMemberVolume,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.SetCustomStageMemberVolume}(${JSON.stringify(
                     payload
                 )})`
@@ -1100,7 +1100,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.RemoveCustomStageMemberPosition,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${
                     ClientDeviceEvents.RemoveCustomStageMemberPosition
                 }(${JSON.stringify(payload)})`
@@ -1141,7 +1141,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.RemoveCustomStageMemberVolume,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.RemoveCustomStageMemberVolume}(${JSON.stringify(
                     payload
                 )})`
@@ -1181,7 +1181,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.ChangeStageDevice,
         (payload: ClientDevicePayloads.ChangeStageDevice, fn?: (error: string | null) => void) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.ChangeStageDevice}(${JSON.stringify(payload)})`
             )
             const { _id, stageId, groupId, userId, deviceId, ...data } = payload
@@ -1222,7 +1222,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.RemoveStageDevice,
         (payload: ClientDevicePayloads.RemoveStageDevice, fn?: (error: string | null) => void) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.RemoveStageDevice}(${JSON.stringify(payload)})`
             )
             const id = new ObjectId(payload)
@@ -1265,7 +1265,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.SetCustomStageDevicePosition,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.SetCustomStageDevicePosition}(${JSON.stringify(
                     payload
                 )})`
@@ -1298,7 +1298,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.SetCustomStageDeviceVolume,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.SetCustomStageDeviceVolume}(${JSON.stringify(
                     payload
                 )})`
@@ -1334,7 +1334,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.RemoveCustomStageDevicePosition,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${
                     ClientDeviceEvents.RemoveCustomStageDevicePosition
                 }(${JSON.stringify(payload)})`
@@ -1375,7 +1375,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.RemoveCustomStageDeviceVolume,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.RemoveCustomStageDeviceVolume}(${JSON.stringify(
                     payload
                 )})`
@@ -1417,7 +1417,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.SetCustomAudioTrackPosition,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.SetCustomAudioTrackPosition}(${JSON.stringify(
                     payload
                 )})`
@@ -1450,7 +1450,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.SetCustomAudioTrackVolume,
             fn?: (error: string | null) => void
         ) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.SetCustomAudioTrackVolume}(${JSON.stringify(
                     payload
                 )})`
@@ -1483,7 +1483,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.RemoveCustomAudioTrackPosition,
             fn?: (error: string | null) => void
         ) => {
-            trace(`${user.name}: ${ClientDeviceEvents.RemoveCustomAudioTrackPosition}(${payload})`)
+            debug(`${user.name}: ${ClientDeviceEvents.RemoveCustomAudioTrackPosition}(${payload})`)
             const customAudioTrackPositionId = new ObjectId(payload)
             return distributor
                 .deleteCustomAudioTrackPosition(customAudioTrackPositionId)
@@ -1507,7 +1507,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.RemoveCustomAudioTrackVolume,
             fn?: (error: string | null) => void
         ) => {
-            trace(`${user.name}: ${ClientDeviceEvents.RemoveCustomAudioTrackVolume}(${payload})`)
+            debug(`${user.name}: ${ClientDeviceEvents.RemoveCustomAudioTrackVolume}(${payload})`)
             const customAudioTrackVolumeId = new ObjectId(payload)
             return distributor
                 .deleteCustomAudioTrackVolume(customAudioTrackVolumeId)
@@ -1530,13 +1530,13 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.JoinStage,
         (payload: ClientDevicePayloads.JoinStage, fn?: (error?: string) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.JoinStage}`)
+            debug(`${user.name}: ${ClientDeviceEvents.JoinStage}`)
             const stageId = new ObjectId(payload.stageId)
             const groupId = payload.groupId ? new ObjectId(payload.groupId) : undefined
             return distributor
                 .joinStage(user._id, stageId, groupId, payload.password)
                 .then(() =>
-                    trace(
+                    debug(
                         `${
                             user.name
                         } joined stage ${stageId.toHexString()} and group ${groupId.toHexString()}`
@@ -1550,10 +1550,10 @@ const handleSocketClientConnection = async (
         }
     )
     socket.on(ClientDeviceEvents.LeaveStage, (fn?: (error: string | null) => void) => {
-        trace(`${user.name}: ${ClientDeviceEvents.LeaveStage}`)
+        debug(`${user.name}: ${ClientDeviceEvents.LeaveStage}`)
         distributor
             .leaveStage(user._id)
-            .then(() => trace(`${user.name} left stage`))
+            .then(() => debug(`${user.name} left stage`))
             .then(() => {
                 if (fn) {
                     return fn(null)
@@ -1571,12 +1571,12 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.LeaveStageForGood,
         (payload: ClientDevicePayloads.LeaveStageForGood, fn?: (error: string | null) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.LeaveStageForGood}`)
+            debug(`${user.name}: ${ClientDeviceEvents.LeaveStageForGood}`)
             // LEAVE STAGE FOR GOOD
             const stageId = new ObjectId(payload)
             return distributor
                 .leaveStageForGood(user._id, stageId)
-                .then(() => trace(`${user.name} left stage ${stageId.toHexString()} for good`))
+                .then(() => debug(`${user.name} left stage ${stageId.toHexString()} for good`))
                 .then(() => {
                     if (fn) {
                         return fn(null)
@@ -1596,7 +1596,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.SendP2POffer,
         (payload: ClientDevicePayloads.SendP2POffer, fn?: (error: string | null) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.SendP2POffer} to stage device ${payload.to}`)
+            debug(`${user.name}: ${ClientDeviceEvents.SendP2POffer} to stage device ${payload.to}`)
             return distributor
                 .sendToStageDevice(
                     new ObjectId(payload.to),
@@ -1620,7 +1620,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.SendP2PAnswer,
         (payload: ClientDevicePayloads.SendP2PAnswer, fn?: (error: string | null) => void) => {
-            trace(`${user.name}: ${ClientDeviceEvents.SendP2PAnswer} to stage device ${payload.to}`)
+            debug(`${user.name}: ${ClientDeviceEvents.SendP2PAnswer} to stage device ${payload.to}`)
             return distributor
                 .sendToStageDevice(
                     new ObjectId(payload.to),
@@ -1644,7 +1644,7 @@ const handleSocketClientConnection = async (
     socket.on(
         ClientDeviceEvents.SendIceCandidate,
         (payload: ClientDevicePayloads.SendIceCandidate, fn?: (error: string | null) => void) => {
-            trace(
+            debug(
                 `${user.name}: ${ClientDeviceEvents.SendIceCandidate} to stage device ${payload.to}`
             )
             return distributor
@@ -1674,13 +1674,13 @@ const handleSocketClientConnection = async (
     socket.join(user._id.toHexString())
     Distributor.sendToDevice(socket, ServerDeviceEvents.Ready)
     if (device) {
-        trace(
+        debug(
             `Registered socket handler for user ${
                 user.name
             } and device ${device._id.toHexString()} at socket ${socket.id}`
         )
     } else {
-        trace(`Registered socket handler for user ${user.name}  at socket ${socket.id}`)
+        debug(`Registered socket handler for user ${user.name}  at socket ${socket.id}`)
     }
     return device
 }

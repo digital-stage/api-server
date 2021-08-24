@@ -9,7 +9,7 @@ import {
 import { Distributor } from '../distributor/Distributor'
 import { useLogger } from '../useLogger'
 
-const { error, trace } = useLogger('socket:router')
+const { error, debug } = useLogger('socket:router')
 
 const handleSocketRouterConnection = async (
     distributor: Distributor,
@@ -20,12 +20,12 @@ const handleSocketRouterConnection = async (
     socket.join(router._id.toHexString())
 
     socket.on('disconnect', () => {
-        trace(`Router ${router._id.toHexString()} disconnected`)
+        debug(`Router ${router._id.toHexString()} disconnected`)
         return distributor.deleteRouter(router._id).catch((e) => error(e))
     })
 
     socket.on(ClientRouterEvents.StageServed, (payload: ClientRouterPayloads.StageServed) => {
-        trace(
+        debug(
             `${router._id.toHexString()}: ${ClientRouterEvents.StageServed}(${JSON.stringify(
                 payload
             )})`
@@ -45,7 +45,7 @@ const handleSocketRouterConnection = async (
     })
 
     socket.on(ClientRouterEvents.ChangeStage, (payload: ClientRouterPayloads.ChangeStage) => {
-        trace(
+        debug(
             `${router._id.toHexString()}: ${ClientRouterEvents.StageServed}(${JSON.stringify(
                 payload
             )})`
@@ -65,7 +65,7 @@ const handleSocketRouterConnection = async (
     })
 
     socket.on(ClientRouterEvents.StageUnServed, (payload: ClientRouterPayloads.StageUnServed) => {
-        trace(
+        debug(
             `${router._id.toHexString()}: ${ClientRouterEvents.StageUnServed}(${JSON.stringify(
                 payload
             )})`
@@ -83,7 +83,7 @@ const handleSocketRouterConnection = async (
     })
 
     socket.on(ClientRouterEvents.ChangeRouter, (payload: ClientRouterPayloads.ChangeRouter) => {
-        trace(
+        debug(
             `${router._id.toHexString()}: ${ClientRouterEvents.ChangeRouter}(${JSON.stringify(
                 payload
             )})`
@@ -98,12 +98,12 @@ const handleSocketRouterConnection = async (
     })
 
     socket.on(ClientRouterEvents.Ready, () => {
-        trace(`${router._id.toHexString()}: ${ClientRouterEvents.Ready}`)
+        debug(`${router._id.toHexString()}: ${ClientRouterEvents.Ready}`)
         distributor.assignRoutersToStages().catch((err) => error(err))
     })
 
     socket.emit(ServerRouterEvents.Ready, router)
-    trace(`Registered socket handler for router ${router._id.toHexString()} at socket ${socket.id}`)
+    debug(`Registered socket handler for router ${router._id.toHexString()} at socket ${socket.id}`)
 
     return router
 }
