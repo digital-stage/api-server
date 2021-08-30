@@ -1537,9 +1537,7 @@ const handleSocketClientConnection = async (
                 .joinStage(user._id, stageId, groupId, payload.password)
                 .then(() =>
                     debug(
-                        `${
-                            user.name
-                        } joined stage ${stageId.toHexString()} and group ${groupId.toHexString()}`
+                        `${user.name} joined stage ${payload.stageId} and group ${payload.groupId}`
                     )
                 )
                 .then(() => fn && fn())

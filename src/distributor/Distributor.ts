@@ -1424,7 +1424,7 @@ class Distributor extends EventEmitter.EventEmitter {
 
     /* STAGE DEVICE */
     private createStageDevice = async (
-        initial: Omit<StageDevice<ObjectId>, '_id' | 'order'>
+        initial: Omit<StageDevice<ObjectId>, '_id' | 'order'> & { stageId: ObjectId }
     ): Promise<StageDevice<ObjectId>> => {
         // obtain an order ID (necessary for ov based technologies)
         const order = await this._db
