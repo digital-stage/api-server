@@ -1,4 +1,4 @@
-import ITeckosSocket from 'teckos/lib/types/ITeckosSocket'
+import { ITeckosSocket } from 'teckos/lib/types/ITeckosSocket'
 import { ObjectId } from 'mongodb'
 import {
     User,

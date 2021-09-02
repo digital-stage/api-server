@@ -1,4 +1,4 @@
-import ITeckosSocket from 'teckos/lib/types/ITeckosSocket'
+import { ITeckosSocket } from 'teckos/lib/types/ITeckosSocket'
 import { ObjectId } from 'mongodb'
 import { ClientDeviceEvents, Payloads } from '@digitalstage/api-types'
 import { UWSSocket } from 'teckos'

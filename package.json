@@ -33,6 +33,7 @@
     "@types/lodash": "^4.14.172",
     "@types/mongodb": "^4.0.7",
     "@types/node": "^16.7.10",
+    "@types/node-fetch": "^2.5.12",
     "@types/pino": "^6.3.11",
     "@typescript-eslint/eslint-plugin": "^4.30.0",
     "@typescript-eslint/parser": "^4.30.0",
@@ -53,6 +54,7 @@
     "@sentry/integrations": "^6.12.0",
     "@sentry/node": "^6.12.0",
     "@sentry/tracing": "^6.12.0",
+    "debug": "^4.3.2",
     "dotenv": "^10.0.0",
     "dotenv-expand": "^5.1.0",
     "ioredis": "^4.27.9",
@@ -60,10 +62,10 @@
     "lodash": "^4.17.21",
     "mongodb": "^4.1.1",
     "nanoid": "^3.1.25",
-    "node-fetch": "^3.0.0",
+    "node-fetch": "^2.6.1",
     "pino": "^6.13.1",
     "pino-logflare": "^0.3.12",
-    "teckos": "*",
+    "teckos": "^0.3.8",
     "uncaught": "^0.0.5"
   }
 }
