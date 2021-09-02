@@ -2727,8 +2727,6 @@ class Distributor extends EventEmitter.EventEmitter {
 
         // Update user
         if (!previousStageMemberId || !previousStageMemberId.equals(stageMember._id)) {
-            user.stageId = stage._id
-            user.stageMemberId = stageMember._id
             await this.updateUser(user._id, {
                 stageId: stage._id,
                 stageMemberId: stageMember._id,
@@ -2745,13 +2743,14 @@ class Distributor extends EventEmitter.EventEmitter {
                     ...wholeStage,
                     stageId: stage._id,
                     groupId: stageMember.groupId,
+                    stageMemberId: stageMember._id,
                     user: user._id,
                 })
                 return this.sendToUser(user._id, ServerDeviceEvents.StageJoined, {
                     ...wholeStage,
                     stageId: stage._id,
                     groupId: stageMember.groupId,
-                    stageMemberId: stageMember,
+                    stageMemberId: stageMember._id,
                 })
             }
         )
