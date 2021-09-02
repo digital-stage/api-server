@@ -35,10 +35,10 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@digitalstage/api-types@^0.4.6":
-  version "0.4.6"
-  resolved "https://registry.yarnpkg.com/@digitalstage/api-types/-/api-types-0.4.6.tgz#6086c6463b200ee139c289c867e31534b5433a0c"
-  integrity sha512-gpB3pIZOSlZZkddb1yjuD/vvPBwGZbAQktjvNqUujCnuHdp9DaW+/vHd+EA8WvlQAbGPrvkYx6u1PrCC3B8jnA==
+"@digitalstage/api-types@^0.4.7":
+  version "0.4.7"
+  resolved "https://registry.yarnpkg.com/@digitalstage/api-types/-/api-types-0.4.7.tgz#1e3dffbf5dab541f3ea197f5699c4257ac01b57f"
+  integrity sha512-d1S4YnMsDLEb16oAM3jdm2RKl/HpaaoTWu8pKhGGqtfkh5K/ofghFKdT7wFAC63CangH8lCSRsvYz+v1FgXlBg==
 
 "@eslint/eslintrc@^0.4.3":
   version "0.4.3"

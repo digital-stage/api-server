@@ -3063,6 +3063,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 const initialStage: InitialStagePackage<ObjectId> = {
                     ...wholeStage,
                     stageId: user.stageId,
+                    stageMemberId: stageMember._id,
                     groupId: stageMember.groupId,
                 }
                 Distributor.sendToDevice(socket, ServerDeviceEvents.StageJoined, initialStage)
