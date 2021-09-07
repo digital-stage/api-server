@@ -1,4 +1,4 @@
-import { ITeckosSocket } from 'teckos/lib/types/ITeckosSocket'
+import { ITeckosSocket } from 'teckos'
 import { ObjectId } from 'mongodb'
 import {
     User,
@@ -12,6 +12,7 @@ import {
     VideoTrack,
     AudioTrack,
     ErrorCodes,
+    ServerDevicePayloads,
 } from '@digitalstage/api-types'
 import { useLogger } from '../useLogger'
 import { Distributor } from '../distributor/Distributor'
@@ -1671,9 +1672,15 @@ const handleSocketClientConnection = async (
     await distributor.sendStageDataToDevice(socket, user)
     Distributor.sendToDevice(socket, ServerDeviceEvents.UserReady, user)
     socket.join(user._id.toHexString())
+    const turnUrls = await distributor.readTurnUrls()
+    const turnCredentails = generateTurnKey()
     Distributor.sendToDevice(socket, ServerDeviceEvents.Ready, {
-        turn: generateTurnKey(),
-    })
+        turn: {
+            urls: turnUrls,
+            username: turnCredentails.username,
+            credential: turnCredentails.credential,
+        },
+    } as ServerDevicePayloads.Ready)
     if (device) {
         debug(
             `Registered socket handler for user ${

@@ -1,4 +1,4 @@
-import { ITeckosSocket } from 'teckos/lib/types/ITeckosSocket'
+import { ITeckosSocket } from 'teckos'
 import { ObjectId } from 'mongodb'
 import { ClientDeviceEvents, Payloads } from '@digitalstage/api-types'
 import { UWSSocket } from 'teckos'
@@ -13,7 +13,8 @@ const { error, warn, debug, trace } = useLogger('socket')
 
 const getIP = (socket: ITeckosSocket): string => {
     const uwsSocket = socket as UWSSocket
-    return Buffer.from(uwsSocket.ws.getRemoteAddressAsText()).toString()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+    return Buffer.from(uwsSocket.ws().getRemoteAddressAsText()).toString()
 }
 
 const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket): void => {

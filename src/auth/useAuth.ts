@@ -1,7 +1,7 @@
 import fetch from 'node-fetch'
 import { ObjectId } from 'mongodb'
 import { ErrorCodes, User } from '@digitalstage/api-types'
-import { HttpRequest } from 'teckos/uws'
+import { HttpRequest } from 'teckos/lib/esm/uws'
 import { AUTH_URL, RESTRICT_STAGE_CREATION } from '../env'
 import { Distributor } from '../distributor/Distributor'
 import { useLogger } from '../useLogger'
