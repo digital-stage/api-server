@@ -31,17 +31,21 @@ import {
     DefaultVolumeProperties,
     ErrorCodes,
 } from '@digitalstage/api-types'
-import { nanoid } from 'nanoid'
+import { customAlphabet } from 'nanoid'
 import { unionWith } from 'lodash'
 import { DEBUG_EVENTS, DEBUG_PAYLOAD } from '../env'
 import { useLogger } from '../useLogger'
 import { generateColor } from '../utils/generateColor'
 import { getDistance } from '../utils/getDistance'
 import { Collections } from './Collections'
+import { TurnServer } from '../types/TurnServer'
 
 const { error, debug, warn } = useLogger('distributor')
 
 ObjectId.cacheHexString = true
+
+const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+const nanoid = customAlphabet(alphabet, 4)
 
 /**
  * The distributor ensures the persistence, consistency and distribution of all state data.
@@ -69,8 +73,6 @@ class Distributor extends EventEmitter.EventEmitter {
             .then(() => this.cleanUp(this._apiServer))
             .catch((err) => error(err))
     }
-
-    getStore = (): Db => this._db
 
     public db = (): Db => this._db
 
@@ -135,6 +137,9 @@ class Distributor extends EventEmitter.EventEmitter {
             this._db.collection<StageMember>(Collections.STAGE_MEMBERS).createIndex({ stageId: 1 }),
             this._db.collection<User>(Collections.USERS).createIndex({ stageId: 1 }),
             this._db.collection<Group>(Collections.GROUPS).createIndex({ stageId: 1 }),
+            this._db
+                .collection<TurnServer>(Collections.TURNSERVERS)
+                .createIndex({ url: 1 }, { unique: true }),
         ])
 
     public cleanUp = (serverAddress: string): Promise<unknown> => {
@@ -224,6 +229,22 @@ class Distributor extends EventEmitter.EventEmitter {
             .then((router) => {
                 this.emit(ServerDeviceEvents.RouterAdded, router)
                 this.sendToAll(ServerDeviceEvents.RouterAdded, router)
+                return router
+            })
+            .then(async (router) => {
+                if (router.turnUrl) {
+                    await this._db
+                        .collection<TurnServer>(Collections.TURNSERVERS)
+                        .insertOne({
+                            routerId: router._id,
+                            url: router.turnUrl,
+                        })
+                        .then(() => this.readTurnUrls())
+                        .then((urls) => {
+                            this.emit(ServerDeviceEvents.TurnServersChanged, urls)
+                            return this.sendToAll(ServerDeviceEvents.TurnServersChanged, urls)
+                        })
+                }
                 return router
             })
     }
@@ -322,56 +343,79 @@ class Distributor extends EventEmitter.EventEmitter {
                 if (result.deletedCount > 0) {
                     this.emit(ServerDeviceEvents.RouterRemoved, id)
                     this.sendToAll(ServerDeviceEvents.RouterRemoved, id)
-                    return this._db
-                        .collection<Stage<ObjectId>>(Collections.STAGES)
-                        .find(
-                            {
-                                $or: [{ audioRouter: id }, { videoRouter: id }],
-                            },
-                            { projection: { _id: 1, audioRouter: 1, videoRouter: 1 } }
-                        )
-                        .toArray()
-                        .then((stages) =>
-                            Promise.all(
-                                stages.map((stage) => {
-                                    debug(`Found ${stages.length}`)
-                                    if (
-                                        stage.audioRouter &&
-                                        stage.videoRouter &&
-                                        stage.audioRouter.equals(id) &&
-                                        stage.videoRouter.equals(id)
-                                    ) {
-                                        debug(
-                                            `Deallocate video and audio router ${id.toHexString()} from stage ${stage._id.toHexString()}`
-                                        )
-                                        return this.updateStage(stage._id, {
-                                            audioRouter: null,
-                                            videoRouter: null,
-                                        })
-                                    }
-                                    if (stage.audioRouter && stage.audioRouter.equals(id)) {
-                                        debug(
-                                            `Deallocate audio router ${id.toHexString()} from stage ${stage._id.toHexString()}`
-                                        )
-                                        return this.updateStage(stage._id, {
-                                            audioRouter: null,
-                                        })
-                                    }
-                                    if (stage.videoRouter && stage.videoRouter.equals(id)) {
-                                        debug(
-                                            `Deallocate video router ${id.toHexString()} from stage ${stage._id.toHexString()}`
-                                        )
-                                        return this.updateStage(stage._id, {
-                                            videoRouter: null,
-                                        })
-                                    }
-                                    return undefined
-                                })
+                    return Promise.all([
+                        // Remove association with stages
+                        this._db
+                            .collection<Stage<ObjectId>>(Collections.STAGES)
+                            .find(
+                                {
+                                    $or: [{ audioRouter: id }, { videoRouter: id }],
+                                },
+                                { projection: { _id: 1, audioRouter: 1, videoRouter: 1 } }
                             )
-                        )
+                            .toArray()
+                            .then((stages) =>
+                                Promise.all(
+                                    stages.map((stage) => {
+                                        debug(`Found ${stages.length}`)
+                                        if (
+                                            stage.audioRouter &&
+                                            stage.videoRouter &&
+                                            stage.audioRouter.equals(id) &&
+                                            stage.videoRouter.equals(id)
+                                        ) {
+                                            debug(
+                                                `Deallocate video and audio router ${id.toHexString()} from stage ${stage._id.toHexString()}`
+                                            )
+                                            return this.updateStage(stage._id, {
+                                                audioRouter: null,
+                                                videoRouter: null,
+                                            })
+                                        }
+                                        if (stage.audioRouter && stage.audioRouter.equals(id)) {
+                                            debug(
+                                                `Deallocate audio router ${id.toHexString()} from stage ${stage._id.toHexString()}`
+                                            )
+                                            return this.updateStage(stage._id, {
+                                                audioRouter: null,
+                                            })
+                                        }
+                                        if (stage.videoRouter && stage.videoRouter.equals(id)) {
+                                            debug(
+                                                `Deallocate video router ${id.toHexString()} from stage ${stage._id.toHexString()}`
+                                            )
+                                            return this.updateStage(stage._id, {
+                                                videoRouter: null,
+                                            })
+                                        }
+                                        return undefined
+                                    })
+                                )
+                            ),
+                        // Remove associated turn servers
+                        this._db
+                            .collection<TurnServer>(Collections.TURNSERVERS)
+                            .deleteMany({
+                                routerId: id,
+                            })
+                            .then(() => this.readTurnUrls())
+                            .then((urls) => {
+                                this.emit(ServerDeviceEvents.TurnServersChanged, urls)
+                                return this.sendToAll(ServerDeviceEvents.TurnServersChanged, urls)
+                            }),
+                    ])
                 }
                 throw new Error(`Could not find and delete router ${id.toHexString()}`)
             })
+
+    /* Turn server */
+    readTurnUrls(): Promise<string[]> {
+        return this._db
+            .collection<TurnServer>(Collections.TURNSERVERS)
+            .find({}, { projection: { url: 1 } })
+            .toArray()
+            .then((result) => result.map((server) => server.url))
+    }
 
     /* USER */
     createUser(
@@ -944,8 +988,9 @@ class Distributor extends EventEmitter.EventEmitter {
         // Generate short UUID
         let isUnique = false
         let code: string
+        let tries = 0
         do {
-            code = nanoid(4)
+            code = nanoid()
             // eslint-disable-next-line no-await-in-loop
             const existingEntry = await this._db
                 .collection<{
@@ -956,7 +1001,8 @@ class Distributor extends EventEmitter.EventEmitter {
                 }>(Collections.INVITE_LINKS)
                 .findOne({ code })
             isUnique = !existingEntry
-        } while (!isUnique)
+            tries++
+        } while (!isUnique && tries < 500)
         return this._db
             .collection<{ stageId: ObjectId; groupId: ObjectId; code: string }>(
                 Collections.INVITE_LINKS
@@ -1014,6 +1060,9 @@ class Distributor extends EventEmitter.EventEmitter {
             ...initialStage,
             videoRouter: null,
             audioRouter: null,
+            render3DAudio: true,
+            renderReverb: false,
+
             _id: undefined,
         }
         return this._db

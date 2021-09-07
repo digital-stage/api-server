@@ -18,5 +18,6 @@ enum Collections {
     CUSTOM_AUDIO_TRACK_POSITIONS = 'c_r_ap_p',
     CUSTOM_AUDIO_TRACK_VOLUMES = 'c_r_ap_v',
     INVITE_LINKS = 'i',
+    TURNSERVERS = 'tu',
 }
 export { Collections }

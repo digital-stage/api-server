@@ -96,7 +96,6 @@ const handleSocketRouterConnection = async (
             })
             .catch((err) => error(err))
     })
-
     socket.on(ClientRouterEvents.Ready, () => {
         debug(`${router._id.toHexString()}: ${ClientRouterEvents.Ready}`)
         distributor.assignRoutersToStages().catch((err) => error(err))

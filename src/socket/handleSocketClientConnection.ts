@@ -15,6 +15,7 @@ import {
 } from '@digitalstage/api-types'
 import { useLogger } from '../useLogger'
 import { Distributor } from '../distributor/Distributor'
+import { generateTurnKey } from '../utils/generateTurnKey'
 
 const { error, debug } = useLogger('socket:client')
 
@@ -1670,7 +1671,9 @@ const handleSocketClientConnection = async (
     await distributor.sendStageDataToDevice(socket, user)
     Distributor.sendToDevice(socket, ServerDeviceEvents.UserReady, user)
     socket.join(user._id.toHexString())
-    Distributor.sendToDevice(socket, ServerDeviceEvents.Ready)
+    Distributor.sendToDevice(socket, ServerDeviceEvents.Ready, {
+        turn: generateTurnKey(),
+    })
     if (device) {
         debug(
             `Registered socket handler for user ${
