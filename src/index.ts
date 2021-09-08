@@ -1,4 +1,5 @@
-import { UWSProvider, App, TemplatedApp } from 'teckos'
+import { UWSProvider } from 'teckos'
+import { TemplatedApp, App } from 'teckos/uws'
 import { MongoClient } from 'mongodb'
 import { address } from 'ip'
 import { DEBUG_PAYLOAD, MONGO_CA, MONGO_DB, MONGO_URL, PORT, REDIS_URL } from './env'
@@ -16,22 +17,18 @@ if (REDIS_URL) {
     warn('Not synchronizing via redis - running in standalone mode')
 }
 
-const init = async (): Promise<UWSProvider> => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-assignment
-    const uws: TemplatedApp = await App()
-    if (DEBUG_PAYLOAD) {
-        warn('Verbose output of socket events ON')
-    }
-    const io = new UWSProvider(uws, {
-        redisUrl: REDIS_URL,
-        debug: DEBUG_PAYLOAD,
-    })
-
-    uws.get('/beat', (res) => {
-        res.end('Boom!')
-    })
-    return io
+const app: TemplatedApp = App()
+if (DEBUG_PAYLOAD) {
+    warn('Verbose output of socket events ON')
 }
+const io = new UWSProvider(app, {
+    redisUrl: REDIS_URL,
+    debug: DEBUG_PAYLOAD,
+})
+
+app.get('/beat', (res) => {
+    res.end('Boom!')
+})
 
 let mongoClient = new MongoClient(MONGO_URL, {
     sslValidate: !!MONGO_CA,
@@ -41,7 +38,6 @@ let mongoClient = new MongoClient(MONGO_URL, {
 })
 
 const start = async () => {
-    const io = await init()
     const apiServer = `${address()}:${PORT}`
     mongoClient = await mongoClient.connect()
     const db = mongoClient.db(MONGO_DB)

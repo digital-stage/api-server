@@ -14,7 +14,7 @@ const { error, warn, debug, trace } = useLogger('socket')
 const getIP = (socket: ITeckosSocket): string => {
     const uwsSocket = socket as UWSSocket
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-    return Buffer.from(uwsSocket.ws().getRemoteAddressAsText()).toString()
+    return Buffer.from(uwsSocket.ws.getRemoteAddressAsText()).toString()
 }
 
 const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket): void => {

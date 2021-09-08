@@ -103,7 +103,7 @@ const useLogger = (
             if (message) {
                 console.error(`${namespace}error ${message.toString()}`)
                 console.trace(message)
-                Sentry.captureException(message)
+                //Sentry.captureException(message)
             }
         }
     } else {

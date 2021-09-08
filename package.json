@@ -33,6 +33,7 @@
     "@types/lodash": "^4.14.172",
     "@types/mongodb": "^4.0.7",
     "@types/node": "^16.7.13",
+    "@types/node-fetch": "^2.5.12",
     "@types/pino": "^6.3.11",
     "@typescript-eslint/eslint-plugin": "^4.31.0",
     "@typescript-eslint/parser": "^4.31.0",
@@ -61,10 +62,10 @@
     "lodash": "^4.17.21",
     "mongodb": "^4.1.1",
     "nanoid": "^3.1.25",
-    "node-fetch": "3.0.0",
+    "node-fetch": "^2.6.2",
     "pino": "^6.13.2",
     "pino-logflare": "^0.3.12",
-    "teckos": "^0.3.9999",
+    "teckos": "^0.4.2",
     "uncaught": "^0.0.5"
   }
 }
