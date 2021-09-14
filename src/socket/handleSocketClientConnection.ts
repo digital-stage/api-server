@@ -1594,6 +1594,28 @@ const handleSocketClientConnection = async (
 
     // P2P signaling
     socket.on(
+        ClientDeviceEvents.SendP2PRestart,
+        (payload: ClientDevicePayloads.SendP2PRestart, fn?: (error: string | null) => void) => {
+            debug(
+                `${user.name}: ${ClientDeviceEvents.SendP2PRestart} to stage device ${payload.to}`
+            )
+            return distributor
+                .sendToStageDevice(new ObjectId(payload.to), ServerDeviceEvents.P2PRestart, payload)
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e: Error) => {
+                    if (fn) {
+                        fn(e.message)
+                    }
+                    error(e)
+                })
+        }
+    )
+    socket.on(
         ClientDeviceEvents.SendP2POffer,
         (payload: ClientDevicePayloads.SendP2POffer, fn?: (error: string | null) => void) => {
             debug(`${user.name}: ${ClientDeviceEvents.SendP2POffer} to stage device ${payload.to}`)
