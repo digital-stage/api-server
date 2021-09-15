@@ -825,7 +825,7 @@ class Distributor extends EventEmitter.EventEmitter {
                         this._db
                             .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
                             .deleteMany({ deviceId: id }),
-                    ]).then(() => this.renewOnlineStatus(result.value.userId))
+                    ]).then(() => this.renewOnlineStatusOfStageMember(result.value.userId))
                 }
                 throw new Error(`Could not find and delete device ${id.toHexString()}`)
             })
@@ -2894,7 +2894,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 })
         })
 
-    renewOnlineStatus = (userId: ObjectId): Promise<void> => {
+    renewOnlineStatusOfStageMember = (userId: ObjectId): Promise<void> => {
         // Has the user online devices?
         return this._db
             .collection<User<ObjectId>>(Collections.USERS)

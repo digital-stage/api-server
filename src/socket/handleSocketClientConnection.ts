@@ -1674,6 +1674,7 @@ const handleSocketClientConnection = async (
         lastLoginAt: new Date().getTime(),
     })
     device.online = true
+    await distributor.renewOnlineStatusOfStageMember(user._id)
 
     debug(
         `Registered socket handler for user ${
