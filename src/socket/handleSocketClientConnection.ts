@@ -1671,7 +1671,7 @@ const handleSocketClientConnection = async (
     await distributor.updateDevice(user._id, device._id, {
         ...initialDevice,
         online: true,
-        lastLoginAt: new Date(),
+        lastLoginAt: new Date().getTime(),
     })
     device.online = true
 

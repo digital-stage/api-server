@@ -636,10 +636,13 @@ class Distributor extends EventEmitter.EventEmitter {
                 debug('no generation')
                 return device
             })
-            .then((device) => {
+            .then(async (device) => {
                 this.emit(ServerDeviceEvents.DeviceAdded, device)
                 this.sendToUser(init.userId, ServerDeviceEvents.DeviceAdded, device)
-                return this.renewOnlineStatus(init.userId).then(() => device)
+                if (device.online) {
+                    await this.renewOnlineStatus(init.userId)
+                }
+                return device
             })
     }
 
@@ -704,41 +707,13 @@ class Distributor extends EventEmitter.EventEmitter {
                                     )
                                 )
                         }
-                        // Also update stage device
-                        if (update.online) {
-                            const stageId = await this.readUser(result.value.userId).then(
-                                (user) => user.stageId
-                            )
-                            if (stageId) {
-                                await this._db
-                                    .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
-                                    .findOne(
-                                        { stageId, deviceId: result.value._id },
-                                        { projection: { _id: 1 } }
-                                    )
-                                    .then((stageDevice) => {
-                                        if (stageDevice) {
-                                            return this.updateStageDevice(stageDevice._id, {
-                                                active: true,
-                                            })
-                                        }
-                                        return null
-                                    })
-                            }
-                        } else {
-                            // Set all stage devices offline, equal to the current stage
-                            await this._db
-                                .collection<StageDevice<ObjectId>>(Collections.STAGE_DEVICES)
-                                .find({ deviceId: result.value._id }, { projection: { _id: 1 } })
-                                .toArray()
-                                .then((stageDevices: { _id: ObjectId }[]) =>
-                                    stageDevices.map((stageDevice) =>
-                                        this.updateStageDevice(stageDevice._id, {
-                                            active: false,
-                                            offer: null,
-                                        })
-                                    )
-                                )
+                        const stageMemberId = await this.readUser(result.value.userId).then(
+                            (user) => user.stageMemberId
+                        )
+                        if (stageMemberId) {
+                            await this.updateStageMember(stageMemberId, {
+                                active: update.online as boolean,
+                            })
                         }
                     }
                 }
