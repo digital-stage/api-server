@@ -25,312 +25,275 @@ const handleSocketClientConnection = async (
     socket: ITeckosSocket,
     user: User<ObjectId>,
     initialDevice?: Partial<Device<ObjectId>>
-): Promise<Device<ObjectId> | undefined> => {
+): Promise<Device<ObjectId>> => {
     let device: Device<ObjectId>
-    if (initialDevice) {
-        // Handle this connection as device
-        if (initialDevice.uuid) {
-            device = await distributor.readDeviceByUserAndUUID(user._id, initialDevice.uuid)
-            if (device) {
-                // Update status
-                debug(`Found existing device with uuid ${initialDevice.uuid}`)
-                await distributor.updateDevice(user._id, device._id, {
-                    ...initialDevice,
-                    online: true,
-                    lastLoginAt: new Date(),
-                })
-                device.online = true
-            }
+    if (initialDevice?.uuid) {
+        // Try to determine an existing device
+        device = await distributor.readDeviceByUserAndUUID(user._id, initialDevice.uuid)
+        if (device) {
+            debug(`Found existing device with uuid ${initialDevice.uuid}`)
         }
-        if (!device) {
-            device = await distributor.createDevice({
-                ...initialDevice,
-                userId: user._id,
-            })
-        }
-        socket.join(device._id.toHexString())
-
-        socket.on('disconnect', async () => {
-            try {
-                await Promise.all([
-                    distributor
-                        .readVideoTrackIdsByDevice(device._id)
-                        .then((trackIds) =>
-                            Promise.all(
-                                trackIds.map((trackId) => distributor.deleteVideoTrack(trackId))
-                            )
-                        ),
-                    distributor
-                        .readAudioTrackIdsByDevice(device._id)
-                        .then((trackIds_1) =>
-                            Promise.all(
-                                trackIds_1.map((trackId_1) =>
-                                    distributor.deleteAudioTrack(trackId_1)
-                                )
-                            )
-                        ),
-                ])
-                if (device.uuid) {
-                    debug(`Set device ${device._id.toHexString()} offline`)
-                    return await distributor.updateDevice(user._id, device._id, { online: false })
-                }
-                debug(`Removing device ${device._id.toHexString()}`)
-                return await distributor.deleteDevice(device._id)
-            } catch (err) {
-                return error(err)
-            }
+    }
+    if (!device) {
+        // No existing device found, so create new, BUT set it offline first ...
+        device = await distributor.createDevice({
+            ...initialDevice,
+            online: false,
+            userId: user._id,
         })
+    }
+    socket.join(device._id.toHexString())
 
-        await distributor
-            .readDevicesByUser(user._id)
-            .then((devices) =>
-                Promise.all(
-                    devices.map((currentDevice) =>
-                        Distributor.sendToDevice(
-                            socket,
-                            ServerDeviceEvents.DeviceAdded,
-                            currentDevice
+    socket.on('disconnect', async () => {
+        try {
+            await Promise.all([
+                distributor
+                    .readVideoTrackIdsByDevice(device._id)
+                    .then((trackIds) =>
+                        Promise.all(
+                            trackIds.map((trackId) => distributor.deleteVideoTrack(trackId))
                         )
-                    )
+                    ),
+                distributor
+                    .readAudioTrackIdsByDevice(device._id)
+                    .then((trackIds_1) =>
+                        Promise.all(
+                            trackIds_1.map((trackId_1) => distributor.deleteAudioTrack(trackId_1))
+                        )
+                    ),
+            ])
+            if (device.uuid) {
+                debug(`Set device ${device._id.toHexString()} offline`)
+                return await distributor.updateDevice(user._id, device._id, { online: false })
+            }
+            debug(`Removing device ${device._id.toHexString()}`)
+            return await distributor.deleteDevice(device._id)
+        } catch (err) {
+            return error(err)
+        }
+    })
+
+    await distributor
+        .readDevicesByUser(user._id)
+        .then((devices) =>
+            Promise.all(
+                devices.map((currentDevice) =>
+                    Distributor.sendToDevice(socket, ServerDeviceEvents.DeviceAdded, currentDevice)
                 )
             )
-        Distributor.sendToDevice(socket, ServerDeviceEvents.LocalDeviceReady, device)
-
-        // Send sound cards
-        await distributor.sendDeviceConfigurationToDevice(socket, user)
-
-        /* AUDIO TRACK */
-        socket.on(
-            ClientDeviceEvents.CreateAudioTrack,
-            (
-                payload: ClientDevicePayloads.CreateAudioTrack,
-                fn?: (error: string | null, track?: AudioTrack<ObjectId>) => void
-            ) => {
-                debug(
-                    `${user.name}: ${ClientDeviceEvents.CreateAudioTrack}(${JSON.stringify(
-                        payload
-                    )})`
-                )
-                const { stageId, ...data } = payload
-                if (!stageId) {
-                    return fn('Missing stage ID')
-                }
-                return distributor
-                    .readStageDeviceByStage(device._id, new ObjectId(stageId))
-                    .then((stageDevice) => {
-                        if (stageDevice) {
-                            return distributor
-                                .createAudioTrack({
-                                    type: '',
-                                    ...data,
-                                    userId: user._id,
-                                    deviceId: device._id,
-                                    stageId: stageDevice.stageId,
-                                    stageMemberId: stageDevice.stageMemberId,
-                                    stageDeviceId: stageDevice._id,
-                                })
-                                .then((track) => {
-                                    if (fn) {
-                                        return fn(null, track)
-                                    }
-                                    return undefined
-                                })
-                        }
-                        throw new Error('No stage device found to assign audio track to')
-                    })
-                    .catch((e: Error) => {
-                        error(e)
-                        if (fn) fn(e.message)
-                    })
-            }
         )
-        socket.on(
-            ClientDeviceEvents.ChangeAudioTrack,
-            (
-                payload: ClientDevicePayloads.ChangeAudioTrack,
-                fn?: (error: string | null) => void
-            ) => {
-                debug(
-                    `${user.name}: ${ClientDeviceEvents.ChangeAudioTrack}(${JSON.stringify(
-                        payload
-                    )})`
-                )
-                const { _id, userId, deviceId, ...data } = payload
-                const id = new ObjectId(_id)
-                return distributor
-                    .readAudioTrack(id)
-                    .then(async (audioTrack) => {
-                        if (audioTrack.userId === user._id) return true
-                        const managedStage = await distributor.readManagedStage(
-                            user._id,
-                            audioTrack.stageId
-                        )
-                        return !!managedStage
-                    })
-                    .then((hasPrivileges) => {
-                        if (hasPrivileges) {
-                            return distributor.updateAudioTrack(id, data).then(() => {
+    Distributor.sendToDevice(socket, ServerDeviceEvents.LocalDeviceReady, device)
+
+    // Send sound cards
+    await distributor.sendDeviceConfigurationToDevice(socket, user)
+
+    /* AUDIO TRACK */
+    socket.on(
+        ClientDeviceEvents.CreateAudioTrack,
+        (
+            payload: ClientDevicePayloads.CreateAudioTrack,
+            fn?: (error: string | null, track?: AudioTrack<ObjectId>) => void
+        ) => {
+            debug(
+                `${user.name}: ${ClientDeviceEvents.CreateAudioTrack}(${JSON.stringify(payload)})`
+            )
+            const { stageId, ...data } = payload
+            if (!stageId) {
+                return fn('Missing stage ID')
+            }
+            return distributor
+                .readStageDeviceByStage(device._id, new ObjectId(stageId))
+                .then((stageDevice) => {
+                    if (stageDevice) {
+                        return distributor
+                            .createAudioTrack({
+                                type: '',
+                                ...data,
+                                userId: user._id,
+                                deviceId: device._id,
+                                stageId: stageDevice.stageId,
+                                stageMemberId: stageDevice.stageMemberId,
+                                stageDeviceId: stageDevice._id,
+                            })
+                            .then((track) => {
                                 if (fn) {
-                                    return fn(null)
+                                    return fn(null, track)
                                 }
                                 return undefined
                             })
-                        }
-                        throw new Error(ErrorCodes.NoPrivileges)
-                    })
-                    .catch((e: Error) => {
-                        if (fn) {
-                            fn(e.message)
-                        }
-                        error(e)
-                    })
-            }
-        )
-        socket.on(
-            ClientDeviceEvents.RemoveAudioTrack,
-            (
-                payload: ClientDevicePayloads.RemoveAudioTrack,
-                fn?: (error: string | null) => void
-            ) => {
-                debug(
-                    `${user.name}: ${ClientDeviceEvents.RemoveAudioTrack}(${JSON.stringify(
-                        payload
-                    )})`
-                )
-                const id = new ObjectId(payload)
-                return distributor
-                    .deleteAudioTrack(id, user._id)
-                    .then(() => {
-                        if (fn) {
-                            return fn(null)
-                        }
-                        return undefined
-                    })
-                    .catch((e: Error) => {
-                        if (fn) {
-                            fn(e.message)
-                        }
-                        error(e)
-                    })
-            }
-        )
+                    }
+                    throw new Error('No stage device found to assign audio track to')
+                })
+                .catch((e: Error) => {
+                    error(e)
+                    if (fn) fn(e.message)
+                })
+        }
+    )
+    socket.on(
+        ClientDeviceEvents.ChangeAudioTrack,
+        (payload: ClientDevicePayloads.ChangeAudioTrack, fn?: (error: string | null) => void) => {
+            debug(
+                `${user.name}: ${ClientDeviceEvents.ChangeAudioTrack}(${JSON.stringify(payload)})`
+            )
+            const { _id, userId, deviceId, ...data } = payload
+            const id = new ObjectId(_id)
+            return distributor
+                .readAudioTrack(id)
+                .then(async (audioTrack) => {
+                    if (audioTrack.userId === user._id) return true
+                    const managedStage = await distributor.readManagedStage(
+                        user._id,
+                        audioTrack.stageId
+                    )
+                    return !!managedStage
+                })
+                .then((hasPrivileges) => {
+                    if (hasPrivileges) {
+                        return distributor.updateAudioTrack(id, data).then(() => {
+                            if (fn) {
+                                return fn(null)
+                            }
+                            return undefined
+                        })
+                    }
+                    throw new Error(ErrorCodes.NoPrivileges)
+                })
+                .catch((e: Error) => {
+                    if (fn) {
+                        fn(e.message)
+                    }
+                    error(e)
+                })
+        }
+    )
+    socket.on(
+        ClientDeviceEvents.RemoveAudioTrack,
+        (payload: ClientDevicePayloads.RemoveAudioTrack, fn?: (error: string | null) => void) => {
+            debug(
+                `${user.name}: ${ClientDeviceEvents.RemoveAudioTrack}(${JSON.stringify(payload)})`
+            )
+            const id = new ObjectId(payload)
+            return distributor
+                .deleteAudioTrack(id, user._id)
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e: Error) => {
+                    if (fn) {
+                        fn(e.message)
+                    }
+                    error(e)
+                })
+        }
+    )
 
-        /* VIDEO TRACK */
-        socket.on(
-            ClientDeviceEvents.CreateVideoTrack,
-            (
-                payload: ClientDevicePayloads.CreateVideoTrack,
-                fn?: (error: string | null, track?: VideoTrack<ObjectId>) => void
-            ) => {
-                debug(
-                    `${user.name}: ${ClientDeviceEvents.CreateVideoTrack}(${JSON.stringify(
-                        payload
-                    )})`
-                )
-                const { stageId, ...data } = payload
-                if (!stageId) {
-                    return fn('Missing stage ID')
-                }
-                return distributor
-                    .readStageDeviceByStage(device._id, new ObjectId(stageId))
-                    .then((stageDevice) => {
-                        if (stageDevice) {
-                            return distributor
-                                .createVideoTrack({
-                                    type: '',
-                                    ...data,
-                                    userId: user._id,
-                                    deviceId: device._id,
-                                    stageId: stageDevice.stageId,
-                                    stageMemberId: stageDevice.stageMemberId,
-                                    stageDeviceId: stageDevice._id,
-                                })
-                                .then((track) => {
-                                    if (fn) {
-                                        return fn(null, track)
-                                    }
-                                    return undefined
-                                })
-                        }
-                        throw new Error('No stage device found to assign video track to')
-                    })
-                    .catch((e: Error) => {
-                        error(e)
-                        if (fn) fn(e.message)
-                    })
+    /* VIDEO TRACK */
+    socket.on(
+        ClientDeviceEvents.CreateVideoTrack,
+        (
+            payload: ClientDevicePayloads.CreateVideoTrack,
+            fn?: (error: string | null, track?: VideoTrack<ObjectId>) => void
+        ) => {
+            debug(
+                `${user.name}: ${ClientDeviceEvents.CreateVideoTrack}(${JSON.stringify(payload)})`
+            )
+            const { stageId, ...data } = payload
+            if (!stageId) {
+                return fn('Missing stage ID')
             }
-        )
-        socket.on(
-            ClientDeviceEvents.ChangeVideoTrack,
-            (
-                payload: ClientDevicePayloads.ChangeVideoTrack,
-                fn?: (error: string | null) => void
-            ) => {
-                debug(
-                    `${user.name}: ${ClientDeviceEvents.ChangeVideoTrack}(${JSON.stringify(
-                        payload
-                    )})`
-                )
-                const { _id, userId, deviceId, ...data } = payload
-                const id = new ObjectId(_id)
-                return distributor
-                    .readVideoTrack(id)
-                    .then(async (audioTrack) => {
-                        if (audioTrack.userId === user._id) return true
-                        const managedStage = await distributor.readManagedStage(
-                            user._id,
-                            audioTrack.stageId
-                        )
-                        return !!managedStage
-                    })
-                    .then((hasPrivileges) => {
-                        if (hasPrivileges) {
-                            return distributor.updateVideoTrack(id, data).then(() => {
+            return distributor
+                .readStageDeviceByStage(device._id, new ObjectId(stageId))
+                .then((stageDevice) => {
+                    if (stageDevice) {
+                        return distributor
+                            .createVideoTrack({
+                                type: '',
+                                ...data,
+                                userId: user._id,
+                                deviceId: device._id,
+                                stageId: stageDevice.stageId,
+                                stageMemberId: stageDevice.stageMemberId,
+                                stageDeviceId: stageDevice._id,
+                            })
+                            .then((track) => {
                                 if (fn) {
-                                    return fn(null)
+                                    return fn(null, track)
                                 }
                                 return undefined
                             })
-                        }
-                        throw new Error(ErrorCodes.NoPrivileges)
-                    })
-                    .catch((e: Error) => {
-                        if (fn) {
-                            fn(e.message)
-                        }
-                        error(e)
-                    })
-            }
-        )
-        socket.on(
-            ClientDeviceEvents.RemoveVideoTrack,
-            (
-                payload: ClientDevicePayloads.RemoveVideoTrack,
-                fn?: (error: string | null) => void
-            ) => {
-                debug(
-                    `${user.name}: ${ClientDeviceEvents.RemoveVideoTrack}(${JSON.stringify(
-                        payload
-                    )})`
-                )
-                const id = new ObjectId(payload)
-                return distributor
-                    .deleteVideoTrack(id, user._id)
-                    .then(() => {
-                        if (fn) {
-                            return fn(null)
-                        }
-                        return undefined
-                    })
-                    .catch((e: Error) => {
-                        if (fn) {
-                            fn(e.message)
-                        }
-                        error(e)
-                    })
-            }
-        )
-    }
+                    }
+                    throw new Error('No stage device found to assign video track to')
+                })
+                .catch((e: Error) => {
+                    error(e)
+                    if (fn) fn(e.message)
+                })
+        }
+    )
+    socket.on(
+        ClientDeviceEvents.ChangeVideoTrack,
+        (payload: ClientDevicePayloads.ChangeVideoTrack, fn?: (error: string | null) => void) => {
+            debug(
+                `${user.name}: ${ClientDeviceEvents.ChangeVideoTrack}(${JSON.stringify(payload)})`
+            )
+            const { _id, userId, deviceId, ...data } = payload
+            const id = new ObjectId(_id)
+            return distributor
+                .readVideoTrack(id)
+                .then(async (audioTrack) => {
+                    if (audioTrack.userId === user._id) return true
+                    const managedStage = await distributor.readManagedStage(
+                        user._id,
+                        audioTrack.stageId
+                    )
+                    return !!managedStage
+                })
+                .then((hasPrivileges) => {
+                    if (hasPrivileges) {
+                        return distributor.updateVideoTrack(id, data).then(() => {
+                            if (fn) {
+                                return fn(null)
+                            }
+                            return undefined
+                        })
+                    }
+                    throw new Error(ErrorCodes.NoPrivileges)
+                })
+                .catch((e: Error) => {
+                    if (fn) {
+                        fn(e.message)
+                    }
+                    error(e)
+                })
+        }
+    )
+    socket.on(
+        ClientDeviceEvents.RemoveVideoTrack,
+        (payload: ClientDevicePayloads.RemoveVideoTrack, fn?: (error: string | null) => void) => {
+            debug(
+                `${user.name}: ${ClientDeviceEvents.RemoveVideoTrack}(${JSON.stringify(payload)})`
+            )
+            const id = new ObjectId(payload)
+            return distributor
+                .deleteVideoTrack(id, user._id)
+                .then(() => {
+                    if (fn) {
+                        return fn(null)
+                    }
+                    return undefined
+                })
+                .catch((e: Error) => {
+                    if (fn) {
+                        fn(e.message)
+                    }
+                    error(e)
+                })
+        }
+    )
 
     // USER
     socket.on(
@@ -1703,15 +1666,20 @@ const handleSocketClientConnection = async (
             credential: turnCredentails.credential,
         },
     } as ServerDevicePayloads.Ready)
-    if (device) {
-        debug(
-            `Registered socket handler for user ${
-                user.name
-            } and device ${device._id.toHexString()} at socket ${socket.id}`
-        )
-    } else {
-        debug(`Registered socket handler for user ${user.name}  at socket ${socket.id}`)
-    }
+
+    // Now set the device online
+    await distributor.updateDevice(user._id, device._id, {
+        ...initialDevice,
+        online: true,
+        lastLoginAt: new Date(),
+    })
+    device.online = true
+
+    debug(
+        `Registered socket handler for user ${
+            user.name
+        } and device ${device._id.toHexString()} at socket ${socket.id}`
+    )
     return device
 }
 export { handleSocketClientConnection }
