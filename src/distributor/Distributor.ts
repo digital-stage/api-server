@@ -573,6 +573,7 @@ class Distributor extends EventEmitter.EventEmitter {
             soundCardId: null,
             type: 'browser',
             online: false,
+            useP2P: true,
             ...init,
             _id: undefined,
             userId: init.userId,
