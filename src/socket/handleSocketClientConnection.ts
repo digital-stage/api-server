@@ -590,7 +590,22 @@ const handleSocketClientConnection = async (
                 .readAdministratedStage(user._id, id)
                 .then((stage) => {
                     if (stage) {
-                        return distributor.updateStage(id, safePayload)
+                        let convertedPayload = safePayload as Stage<unknown>
+                        if (safePayload.admins) {
+                            convertedPayload = {
+                                ...convertedPayload,
+                                admins: safePayload.admins.map((adminId) => new ObjectId(adminId)),
+                            }
+                        }
+                        if (safePayload.soundEditors) {
+                            convertedPayload = {
+                                ...convertedPayload,
+                                soundEditors: safePayload.soundEditors.map(
+                                    (soundEditorId) => new ObjectId(soundEditorId)
+                                ),
+                            }
+                        }
+                        return distributor.updateStage(id, convertedPayload)
                     }
                     throw new Error(
                         `User ${
