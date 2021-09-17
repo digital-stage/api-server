@@ -196,7 +196,7 @@ class Distributor extends EventEmitter.EventEmitter {
                             }
                         }
                     })
-                ),
+                ) /*
             this._db
                 .collection<Stage>(Collections.STAGES)
                 .find()
@@ -212,7 +212,7 @@ class Distributor extends EventEmitter.EventEmitter {
                             }
                         )
                     )
-                }),
+                }),*/,
         ])
     }
 
