@@ -39,6 +39,7 @@ import {
 import { useLogger } from '../useLogger'
 import { Distributor } from '../distributor/Distributor'
 import { generateTurnKey } from '../utils/generateTurnKey'
+import { verifyPayload } from '../utils/verifyPayload'
 
 const { error, debug } = useLogger('socket:client')
 
@@ -413,22 +414,13 @@ const handleSocketClientConnection = async (
             fn?: (error: string | null, id?: ObjectId) => void
         ) => {
             debug(`${user.name}: ${ClientDeviceEvents.SetSoundCard}(${JSON.stringify(payload)})`)
+            if (!verifyPayload(payload, ['audioDriver', 'type', 'label'], fn)) {
+                error(
+                    ClientDeviceEvents.SetSoundCard + ': Invalid payload' + JSON.stringify(payload)
+                )
+                return
+            }
             const { audioDriver, type, label, ...update } = payload
-            if (!audioDriver || audioDriver.length === 0) {
-                if (fn) fn('audioDriver is missing')
-                error('audioDriver is missing')
-                return null
-            }
-            if (!type || type.length === 0) {
-                if (fn) fn('type is missing')
-                error('type is missing')
-                return null
-            }
-            if (!label || label.length === 0) {
-                if (fn) fn('label is missing')
-                error('label is missing')
-                return null
-            }
             return distributor
                 .upsertSoundCard(user._id, device._id, audioDriver, type, label, update)
                 .then((id: ObjectId) => {
@@ -452,6 +444,12 @@ const handleSocketClientConnection = async (
             fn?: (error: string | null, id?: ObjectId) => void
         ) => {
             debug(`${user.name}: ${ClientDeviceEvents.ChangeSoundCard}(${JSON.stringify(payload)})`)
+            if (!verifyPayload(payload, ['_id', 'type', 'label'], fn)) {
+                error(
+                    ClientDeviceEvents.SetSoundCard + ': Invalid payload' + JSON.stringify(payload)
+                )
+                return
+            }
             const { _id, userId, ...update } = payload
             return distributor
                 .updateSoundCard(new ObjectId(_id), update)
