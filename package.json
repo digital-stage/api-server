@@ -31,9 +31,7 @@
     "@types/ioredis": "^4.27.4",
     "@types/ip": "^1.1.0",
     "@types/lodash": "^4.14.175",
-    "@types/mongodb": "^4.0.7",
     "@types/node": "^16.10.1",
-    "@types/node-fetch": "^3.0.3",
     "@types/pino": "^6.3.11",
     "@typescript-eslint/eslint-plugin": "^4.32.0",
     "@typescript-eslint/parser": "^4.32.0",
@@ -50,7 +48,7 @@
     "typescript": "^4.4.3"
   },
   "dependencies": {
-    "@digitalstage/api-types": "^0.5.999",
+    "@digitalstage/api-types": "^0.6.0",
     "@sentry/integrations": "^6.13.2",
     "@sentry/node": "^6.13.2",
     "@sentry/tracing": "^6.13.2",
@@ -62,10 +60,10 @@
     "lodash": "^4.17.21",
     "mongodb": "^4.1.2",
     "nanoid": "^3.1.28",
-    "node-fetch": "^3.0.0",
+    "node-fetch": "^2.6.5",
     "pino": "^6.13.3",
     "pino-logflare": "^0.3.12",
-    "teckos": "^0.5.7",
+    "teckos": "^0.5.9",
     "uncaught": "^0.0.5"
   }
 }

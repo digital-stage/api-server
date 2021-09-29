@@ -218,23 +218,7 @@ class Distributor extends EventEmitter.EventEmitter {
                             }
                         }
                     })
-                ) /*
-            this._db
-                .collection<Stage>(Collections.STAGES)
-                .find()
-                .toArray()
-                .then((stages) => {
-                    return stages.map((stage) =>
-                        this._db.collection<Stage>(Collections.STAGES).updateOne(
-                            { _id: stage._id },
-                            {
-                                $set: {
-                                    admins: stage.admins.map((adminId) => new ObjectId(adminId)),
-                                },
-                            }
-                        )
-                    )
-                }),*/,
+                ),
         ])
     }
 
