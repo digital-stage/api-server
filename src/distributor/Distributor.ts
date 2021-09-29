@@ -591,7 +591,7 @@ class Distributor extends EventEmitter.EventEmitter {
         const time = new Date().getTime()
         const doc: Device<ObjectId> & { _id?: ObjectId } = {
             uuid: null,
-            name: '',
+            type: 'browser',
             requestSession: false,
             canAudio: false,
             canVideo: false,
@@ -599,19 +599,21 @@ class Distributor extends EventEmitter.EventEmitter {
             receiveVideo: false,
             sendAudio: false,
             sendVideo: false,
+            canOv: false,
+            inputSoundCardId: null,
+            outputSoundCardId: null,
+            volume: 1,
+            balance: 0.5,
+            name: '',
+            online: false,
+            useP2P: true,
+            egoGain: 1,
             ovRawMode: false,
             ovRenderISM: false,
             ovP2p: true,
             ovReceiverType: 'ortf',
             ovRenderReverb: true,
             ovReverbGain: 0.4,
-            canOv: false,
-            volume: 1,
-            egoGain: 1,
-            soundCardId: null,
-            type: 'browser',
-            online: false,
-            useP2P: true,
             ...init,
             _id: undefined,
             userId: init.userId,
@@ -873,8 +875,10 @@ class Distributor extends EventEmitter.EventEmitter {
     upsertSoundCard(
         userId: ObjectId,
         deviceId: ObjectId,
-        uuid: string,
-        update: Partial<Omit<SoundCard<ObjectId>, '_id' | 'userId' | 'deviceId' | 'uuid'>>
+        audioDriver: string,
+        type: 'input' | 'output',
+        label: string,
+        update: Partial<Omit<SoundCard<ObjectId>, '_id' | 'userId' | 'deviceId'>>
     ): Promise<ObjectId> {
         return this._db
             .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
@@ -882,7 +886,9 @@ class Distributor extends EventEmitter.EventEmitter {
                 {
                     userId,
                     deviceId,
-                    uuid,
+                    audioDriver,
+                    type,
+                    label,
                 },
                 {
                     $set: update,
@@ -899,23 +905,21 @@ class Distributor extends EventEmitter.EventEmitter {
                     return result.value._id
                 }
                 if (result.ok) {
-                    const doc = {
+                    const doc: Omit<SoundCard<ObjectId>, '_id'> = {
                         sampleRate: 48000,
                         sampleRates: [48000],
-                        label: uuid,
                         isDefault: false,
                         online: false,
-                        drivers: [],
-                        driver: null,
-                        inputChannels: {},
-                        outputChannels: {},
+                        channels: {},
                         periodSize: 96,
                         numPeriods: 2,
                         softwareLatency: null,
                         ...update,
                         userId,
                         deviceId,
-                        uuid,
+                        audioDriver,
+                        type,
+                        label,
                     }
                     return this._db
                         .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
@@ -995,8 +999,14 @@ class Distributor extends EventEmitter.EventEmitter {
                             .then((devices) =>
                                 devices.map((device) =>
                                     this.updateDevice(device.userId, device._id, {
-                                        soundCardId:
-                                            device.soundCardId === id ? null : device.soundCardId,
+                                        inputSoundCardId:
+                                            device.inputSoundCardId === id
+                                                ? null
+                                                : device.inputSoundCardId,
+                                        outputSoundCardId:
+                                            device.outputSoundCardId === id
+                                                ? null
+                                                : device.outputSoundCardId,
                                     })
                                 )
                             ),

@@ -413,16 +413,24 @@ const handleSocketClientConnection = async (
             fn?: (error: string | null, id?: ObjectId) => void
         ) => {
             debug(`${user.name}: ${ClientDeviceEvents.SetSoundCard}(${JSON.stringify(payload)})`)
-            const { uuid, ...update } = payload
-            if (!uuid || uuid.length === 0) {
-                if (fn) {
-                    fn('UUID missing')
-                    error('UUID missing')
-                }
+            const { audioDriver, type, label, ...update } = payload
+            if (!audioDriver || audioDriver.length === 0) {
+                if (fn) fn('audioDriver is missing')
+                error('audioDriver is missing')
+                return null
+            }
+            if (!type || type.length === 0) {
+                if (fn) fn('type is missing')
+                error('type is missing')
+                return null
+            }
+            if (!label || label.length === 0) {
+                if (fn) fn('label is missing')
+                error('label is missing')
                 return null
             }
             return distributor
-                .upsertSoundCard(user._id, device._id, uuid, update)
+                .upsertSoundCard(user._id, device._id, audioDriver, type, label, update)
                 .then((id: ObjectId) => {
                     if (fn) {
                         return fn(null, id)
