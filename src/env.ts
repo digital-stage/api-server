@@ -23,16 +23,39 @@
 import { config } from 'dotenv'
 import dotenvExpand from 'dotenv-expand'
 import * as fs from 'fs'
+import { cleanEnv, str, bool, port } from 'envalid'
 
 const getEnvPath = () => {
     if (fs.existsSync('.env.local')) return '.env.local'
-    if (fs.existsSync('.env')) return '.env'
-    return `.env.${process.env.NODE_ENV}`
+    if (process.env.NODE_ENV && fs.existsSync(`.env.${process.env.NODE_ENV}`))
+        return `.env.${process.env.NODE_ENV}`
+    return '.env'
 }
 
 const envPath = getEnvPath()
-const env = config({ path: envPath })
-dotenvExpand(env)
+const env = dotenvExpand(config({ path: envPath })).parsed
+
+const variables = cleanEnv(env, {
+    // Required
+    AUTH_URL: str(),
+    API_KEY: str(),
+    MONGO_URL: str(),
+    MONGO_DB: str(),
+    MONGO_CA: str({ default: undefined }),
+    PORT: port({ default: 3000 }),
+    RESTRICT_STAGE_CREATION: bool({ default: false }),
+    TURN_SECRET: str({ default: 'default' }),
+
+    // Optional: Redis
+    USE_REDIS: bool({ default: false }),
+    REDIS_URL: str({ default: undefined }),
+
+    // Optional: Debugging
+    DEBUG_EVENTS: bool({ default: false }),
+    DEBUG_PAYLOAD: bool({ default: false }),
+    SENTRY_DSN: str({ default: undefined }),
+    NODE_ENV: str({ choices: ['development', 'preview', 'production'] }),
+})
 
 const {
     MONGO_URL,
@@ -44,20 +67,16 @@ const {
     API_KEY,
     TURN_SECRET,
     SENTRY_DSN,
-    LOGFLARE_API_KEY,
-    LOGFLARE_SOURCE_TOKEN,
-} = process.env
+    USE_REDIS,
+    DEBUG_PAYLOAD,
+    DEBUG_EVENTS,
+    RESTRICT_STAGE_CREATION,
+} = variables
 
 // eslint-disable-next-line no-console
 console.info(`Loaded env from ${envPath}`)
 // eslint-disable-next-line no-console
 console.info(`Using auth server at ${AUTH_URL}`)
-
-const USE_REDIS = process.env.USE_REDIS && process.env.USE_REDIS === 'true'
-const DEBUG_EVENTS = process.env.DEBUG_EVENTS && process.env.DEBUG_EVENTS === 'true'
-const DEBUG_PAYLOAD = process.env.DEBUG_PAYLOAD && process.env.DEBUG_PAYLOAD === 'true'
-const RESTRICT_STAGE_CREATION =
-    process.env.RESTRICT_STAGE_CREATION && process.env.RESTRICT_STAGE_CREATION === 'true'
 
 export {
     API_KEY,
@@ -72,7 +91,5 @@ export {
     MONGO_CA,
     SENTRY_DSN,
     TURN_SECRET,
-    LOGFLARE_API_KEY,
-    LOGFLARE_SOURCE_TOKEN,
     RESTRICT_STAGE_CREATION,
 }

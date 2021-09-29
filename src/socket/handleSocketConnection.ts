@@ -50,6 +50,8 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
         if (apiKey) {
             // A router is trying to connect
             if (apiKey === API_KEY) {
+                // Manually emit ready (fallback for teckos to verify token)
+                socket.emit('ready')
                 return handleSocketRouterConnection(distributor, socket, {
                     ...router,
                     _id: undefined,
@@ -75,6 +77,11 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                     ? new ObjectId(device.soundCardId)
                     : null
             return getUserByToken(token)
+                .then((user) => {
+                    // Manually emit ready (fallback for teckos to verify token)
+                    socket.emit('ready')
+                    return user
+                })
                 .then((user) =>
                     handleSocketClientConnection(distributor, socket, user, {
                         ...device,

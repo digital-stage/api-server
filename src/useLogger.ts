@@ -24,45 +24,13 @@
 import * as Sentry from '@sentry/node'
 import * as uncaught from 'uncaught'
 import * as Tracing from '@sentry/tracing'
-import { LOGFLARE_API_KEY, LOGFLARE_SOURCE_TOKEN, SENTRY_DSN } from './env'
+import { SENTRY_DSN } from './env'
 import pino from 'pino'
-import { createPinoBrowserSend, createWriteStream } from 'pino-logflare'
-
-declare global {
-    // eslint-disable-next-line @typescript-eslint/no-namespace
-    namespace NodeJS {
-        interface Global {
-            __rootdir__: string
-        }
-    }
-}
-
-let logflareWriteStream, logflareBrowserStream
-if (!!LOGFLARE_API_KEY && !!LOGFLARE_SOURCE_TOKEN) {
-    // create pino-logflare stream
-    logflareWriteStream = createWriteStream({
-        apiKey: LOGFLARE_API_KEY,
-        sourceToken: LOGFLARE_SOURCE_TOKEN,
-    })
-    // create pino-logflare browser stream
-    logflareBrowserStream = createPinoBrowserSend({
-        apiKey: LOGFLARE_API_KEY,
-        sourceToken: LOGFLARE_SOURCE_TOKEN,
-    })
-}
 
 // create pino loggger
-const logger = pino(
-    {
-        browser: {
-            transmit: {
-                send: logflareBrowserStream,
-            },
-        },
-        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-    },
-    logflareWriteStream
-)
+const logger = pino({
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+})
 
 uncaught.start()
 

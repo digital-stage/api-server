@@ -31,8 +31,6 @@ import { Distributor } from './distributor/Distributor'
 
 const { error, warn, info } = useLogger('')
 
-const port = PORT ? parseInt(PORT, 10) : 4000
-
 if (USE_REDIS && REDIS_URL) {
     info(`Using redis at ${REDIS_URL}`)
 } else {
@@ -65,10 +63,10 @@ const start = async () => {
     const db = mongoClient.db(MONGO_DB)
     const distributor = new Distributor(io, db, apiServer)
     io.onConnection((socket) => handleSocketConnection(distributor, socket))
-    return io.listen(port)
+    return io.listen(PORT)
 }
 
 info('Starting ...')
 start()
-    .then(() => info(`Listening on port ${port}`))
+    .then(() => info(`Listening on port ${PORT}`))
     .catch((e) => error(e))
