@@ -37,7 +37,7 @@ jobs:
         env:
           CERT: ${{ secrets.MONGO_CERT }}
         run: |
-          echo "$CERT" | base64 --decode > $GITHUB_WORKSPACE/mongo.crt
+          echo $CERT | base64 --decode > $GITHUB_WORKSPACE/mongo.crt
 
       - name: Replace Environment Variables
         uses: danielr1996/envsubst-action@1.0.0
