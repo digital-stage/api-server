@@ -13,7 +13,7 @@ COPY package*.json ./
 COPY tsconfig.json ./
 COPY src ./src
 RUN npm ci --only=production
-RUN npm install -g forever
+RUN npm install -g forever typescript
 
 # Build source
 RUN npm run build
