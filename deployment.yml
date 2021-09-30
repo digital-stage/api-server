@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: digitalstage-api
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: digitalstage-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digitalstage-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: digitalstage-api
+  template:
+    metadata:
+      labels:
+        app: digitalstage-api
+    spec:
+      containers:
+        - name: digitalstage-api
+          image: <IMAGE>
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "300m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "8080"
+            - name: AUTH_URL
+              value: "$AUTH_URL"
+            - name: API_KEY
+              value: "$API_KEY"
+            - name: TURN_SECRET
+              value: "$TURN_SECRET"
+            - name: MONGO_URL
+              value: "$MONGO_URL"
+            - name: MONGO_DB
+              value: "$MONGO_DB"
+            - name: $MONGO_CA
+              value: "$MONGO_CA"
+            - name: USE_REDIS
+              value: "$USE_REDIS"
+            - name: REDIS_URL
+              value: "$REDIS_URL"
+            - name: SENTRY_DSN
+              value: "$SENTRY_DSN"
+            - name: RESTRICT_STAGE_CREATION
+              value: "$RESTRICT_STAGE_CREATION"

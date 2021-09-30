@@ -1,20 +1,25 @@
-FROM node:14.15.0-buster AS build
+FROM node
+LABEL authors="Digital Stage"
 
-ENV API_KEY=242420wj220f29f2f2!3f23f
-ENV MONGO_URL=mongodb://mongo:27017
-ENV MONGO_DB=api
-ENV PORT=4000
+# Update packages
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY package.json ./
+WORKDIR /api-server
+
+# Install dependencies
+COPY package*.json ./
 COPY tsconfig.json ./
-RUN npm install
+COPY *.crt ./
 COPY src ./src
+RUN npm ci --only=production
+RUN npm install -g forever
+
+# Build source
 RUN npm run build
 
-FROM node:14.15.0-buster
-ENV NODE_ENV=production
-COPY package.json ./
-RUN npm install
-COPY --from=build /dist ./dist
-EXPOSE 5000
-ENTRYPOINT ["node", "./dist/index.js"]
+COPY . /api-server
+
+EXPOSE 8080
+ENTRYPOINT ["forever", "./dist/index.js"]
