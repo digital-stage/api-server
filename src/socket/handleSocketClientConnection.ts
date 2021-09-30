@@ -87,10 +87,10 @@ const handleSocketClientConnection = async (
             ])
             if (device.uuid) {
                 debug(`Set device ${device._id.toHexString()} offline`)
-                return await distributor.updateDevice(user._id, device._id, { online: false })
+                await distributor.updateDevice(user._id, device._id, { online: false })
             }
             debug(`Removing device ${device._id.toHexString()}`)
-            return await distributor.deleteDevice(device._id)
+            await distributor.deleteDevice(device._id)
         } catch (err) {
             return error(err)
         }
@@ -1717,7 +1717,6 @@ const handleSocketClientConnection = async (
         lastLoginAt: new Date().getTime(),
     })
     device.online = true
-    await distributor.renewOnlineStatusOfStageMember(user._id)
 
     debug(
         `Registered socket handler for user ${

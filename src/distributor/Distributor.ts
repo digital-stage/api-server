@@ -661,10 +661,13 @@ class Distributor extends EventEmitter.EventEmitter {
                 debug('no generation')
                 return device
             })
-            .then((device) => {
+            .then(async (device) => {
                 this.emit(ServerDeviceEvents.DeviceAdded, device)
                 this.sendToUser(init.userId, ServerDeviceEvents.DeviceAdded, device)
-                // await this.renewOnlineStatus(init.userId)
+                if (device.online) {
+                    // Renew only if new device is online
+                    await this.renewOnlineStatusOfUser(init.userId)
+                }
                 return device
             })
     }
@@ -704,6 +707,7 @@ class Distributor extends EventEmitter.EventEmitter {
             _id: id,
         }
         this.sendToUser(userId, ServerDeviceEvents.DeviceChanged, payload)
+        // Update device
         return this._db
             .collection<Device<ObjectId>>(Collections.DEVICES)
             .findOneAndUpdate(
@@ -765,6 +769,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                     })
                             }
                         }
+                        await this.renewOnlineStatusOfUser(userId)
                     }
                 }
                 return
@@ -850,7 +855,7 @@ class Distributor extends EventEmitter.EventEmitter {
                         this._db
                             .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
                             .deleteMany({ deviceId: id }),
-                    ]).then(() => this.renewOnlineStatusOfStageMember(result.value.userId))
+                    ]).then(() => this.renewOnlineStatusOfUser(result.value.userId))
                 }
                 throw new Error(`Could not find and delete device ${id.toHexString()}`)
             })
@@ -2927,7 +2932,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 })
         })
 
-    renewOnlineStatusOfStageMember = (userId: ObjectId): Promise<void> => {
+    renewOnlineStatusOfUser = (userId: ObjectId): Promise<void> => {
         // Has the user online devices?
         return this._db
             .collection<User<ObjectId>>(Collections.USERS)
