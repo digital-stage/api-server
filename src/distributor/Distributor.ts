@@ -590,7 +590,7 @@ class Distributor extends EventEmitter.EventEmitter {
             balance: 0.5,
             name: '',
             online: false,
-            useP2P: true,
+            useP2P: false,
             egoGain: 1,
             ovRawMode: false,
             ovRenderISM: false,
