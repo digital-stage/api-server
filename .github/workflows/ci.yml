@@ -28,7 +28,7 @@ jobs:
         run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
       - name: Push image to Docker Hub
-        run: docker push tobiashegemann/digitalstage-api
+        run: docker push tobiashegemann/digitalstage-api --all-tags
 
       - name: Update deployment file
         run: TAG=$(echo $GITHUB_SHA | head -c7) && sed -i 's|<IMAGE>|tobiashegemann/digitalstage-api:'${TAG}'|' $GITHUB_WORKSPACE/deployment.yml
