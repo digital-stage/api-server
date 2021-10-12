@@ -3230,9 +3230,6 @@ class Distributor extends EventEmitter.EventEmitter {
         const userIds = unionWith<ObjectId>(adminIds, stageMemberIds, (prev, curr) =>
             prev.equals(curr)
         )
-        console.log('Send to stage')
-        console.log(adminIds, stageMemberIds)
-        console.log(userIds)
         userIds.map((userId) => this.sendToUser(userId, event, payload))
         return undefined
     }

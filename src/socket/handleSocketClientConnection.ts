@@ -574,11 +574,11 @@ const handleSocketClientConnection = async (
             debug(`${user.name}: ${ClientDeviceEvents.CreateStage}(${JSON.stringify(payload)})`)
             const admins =
                 payload?.admins && Array.isArray(payload.admins)
-                    ? payload.admins.map((admin) => new ObjectId(admin))
+                    ? payload.admins.map((admin: string) => new ObjectId(admin))
                     : []
             const soundEditors =
                 payload?.soundEditors && Array.isArray(payload.soundEditors)
-                    ? payload.soundEditors.map((soundEditor) => new ObjectId(soundEditor))
+                    ? payload.soundEditors.map((soundEditor: string) => new ObjectId(soundEditor))
                     : []
             return distributor
                 .readUser(user._id)
