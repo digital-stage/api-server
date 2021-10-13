@@ -666,7 +666,10 @@ class Distributor extends EventEmitter.EventEmitter {
                 this.sendToUser(init.userId, ServerDeviceEvents.DeviceAdded, device)
                 if (device.online) {
                     // Renew only if new device is online
-                    await this.renewOnlineStatusOfUser(init.userId)
+                    await this.renewOnlineStatusOfUser(init.userId).catch((err: Error) => {
+                        error('Error when renewing online state of user')
+                        error(err)
+                    })
                 }
                 return device
             })
