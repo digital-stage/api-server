@@ -87,9 +87,14 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                         ...device,
                         soundCardId,
                         userId: user._id,
+                    }).catch((e: Error) => {
+                        warn(`Internal error`)
+                        socket.emit('error', e.message)
+                        socket.disconnect()
+                        error(e)
                     })
                 )
-                .catch((e) => {
+                .catch((e: Error) => {
                     warn(`Attempt to connect with invalid token from IP ${getIP(socket)}`)
                     socket.disconnect()
                     error(e)
