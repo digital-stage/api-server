@@ -55,13 +55,13 @@ jobs:
           input: deployment.yml
           output: deploy.yml
 
-      - name: Save DigitalOcean kubeconfig
-        run: doctl kubernetes cluster kubeconfig save $CLUSTER_NAME
-        env:
-          CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
-
-      - name: Deploy to Kubernetes
-        run: kubectl apply -f deploy.yml
-
-      - name: Verify deployment
-        run: kubectl rollout status deployment/digitalstage-api
+#      - name: Save DigitalOcean kubeconfig
+#        run: doctl kubernetes cluster kubeconfig save $CLUSTER_NAME
+#        env:
+#          CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+#
+#      - name: Deploy to Kubernetes
+#        run: kubectl apply -f deploy.yml
+#
+#      - name: Verify deployment
+#        run: kubectl rollout status deployment/digitalstage-api
