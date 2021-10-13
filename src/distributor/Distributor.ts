@@ -1529,7 +1529,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 }
                 return 0
             })
-        if (order === -1) throw new Error(ErrorCodes.MaxMembersReached)
+        //if (order === -1) throw new Error(ErrorCodes.MaxMembersReached)
         const doc = {
             ...initial,
             order,
