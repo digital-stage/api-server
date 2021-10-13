@@ -772,7 +772,10 @@ class Distributor extends EventEmitter.EventEmitter {
                                     })
                             }
                         }
-                        await this.renewOnlineStatusOfUser(userId)
+                        await this.renewOnlineStatusOfUser(userId).catch((err: Error) => {
+                            error('Error when renewing online state of user')
+                            error(err)
+                        })
                     }
                 }
                 return
