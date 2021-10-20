@@ -828,6 +828,7 @@ class Distributor extends EventEmitter.EventEmitter {
                                     this.deleteVideoTrack(videoTrack._id)
                                 )
                             ),
+                        //TODO: Is it ok to delete here without using the delete methods (and informing the user)?
                         this._db
                             .collection<CustomGroupVolume<ObjectId>>(
                                 Collections.CUSTOM_GROUP_VOLUMES
@@ -872,8 +873,13 @@ class Distributor extends EventEmitter.EventEmitter {
         deviceId: ObjectId,
         audioDriver: string,
         type: 'input' | 'output',
-        label: string,
-        update: Partial<Omit<SoundCard<ObjectId>, '_id' | 'userId' | 'deviceId'>>
+        uuid: string,
+        update: Partial<
+            Omit<
+                SoundCard<ObjectId>,
+                '_id' | 'userId' | 'deviceId' | 'audioDriver' | 'type' | 'uuid'
+            >
+        >
     ): Promise<ObjectId> {
         return this._db
             .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
@@ -883,7 +889,7 @@ class Distributor extends EventEmitter.EventEmitter {
                     deviceId,
                     audioDriver,
                     type,
-                    label,
+                    uuid,
                 },
                 {
                     $set: update,
@@ -909,12 +915,13 @@ class Distributor extends EventEmitter.EventEmitter {
                         periodSize: 96,
                         numPeriods: 2,
                         softwareLatency: null,
+                        label: uuid,
                         ...update,
                         userId,
                         deviceId,
                         audioDriver,
                         type,
-                        label,
+                        uuid,
                     }
                     return this._db
                         .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
