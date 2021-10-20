@@ -911,7 +911,7 @@ class Distributor extends EventEmitter.EventEmitter {
                         sampleRates: [48000],
                         isDefault: false,
                         online: false,
-                        channels: {},
+                        channels: [],
                         periodSize: 96,
                         numPeriods: 2,
                         softwareLatency: null,
