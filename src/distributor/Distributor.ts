@@ -219,6 +219,28 @@ class Distributor extends EventEmitter.EventEmitter {
                         }
                     })
                 ),
+            this._db
+                .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
+                .aggregate<{ _id: ObjectId }>([
+                    {
+                        $lookup: {
+                            from: Collections.DEVICES,
+                            localField: 'deviceId',
+                            foreignField: '_id',
+                            as: 'matched_docs',
+                        },
+                    },
+                    {
+                        $match: { matched_docs: { $eq: [] } },
+                    },
+                ])
+                .toArray()
+                .then((docs) => {
+                    const orphanedIds = docs.map((doc) => doc._id)
+                    return this._db
+                        .collection(Collections.SOUND_CARDS)
+                        .deleteMany({ _id: { $in: orphanedIds } })
+                }),
         ])
     }
 
