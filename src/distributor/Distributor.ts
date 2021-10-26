@@ -103,7 +103,6 @@ class Distributor extends EventEmitter.EventEmitter {
             this._db.collection<Router>(Collections.ROUTERS).createIndex({ server: 1 }),
             this._db.collection<Stage>(Collections.STAGES).createIndex({ admins: 1 }),
             this._db.collection<StageMember>(Collections.STAGE_MEMBERS).createIndex({ userId: 1 }),
-            this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ userId: 1 }),
             this._db.collection<Device>(Collections.DEVICES).createIndex({ userId: 1 }),
             this._db.collection<Device>(Collections.DEVICES).createIndex({ server: 1 }),
             this._db.collection<StageMember>(Collections.STAGE_MEMBERS).createIndex({ stageId: 1 }),
@@ -155,10 +154,17 @@ class Distributor extends EventEmitter.EventEmitter {
                 .createIndex({ stageMemberId: 1 }),
             this._db.collection<StageMember>(Collections.STAGE_MEMBERS).createIndex({ userId: 1 }),
             this._db.collection<Group>(Collections.GROUPS).createIndex({ stageId: 1 }),
-            this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ userId: 1 }),
             this._db.collection<StageMember>(Collections.STAGE_MEMBERS).createIndex({ stageId: 1 }),
             this._db.collection<User>(Collections.USERS).createIndex({ stageId: 1 }),
             this._db.collection<Group>(Collections.GROUPS).createIndex({ stageId: 1 }),
+
+            // Sound card
+            this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ userId: 1 }),
+            this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ deviceId: 1 }),
+            this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ audioDriver: 1 }),
+            this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ type: 1 }),
+            this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ uuid: 1 }),
+
             this._db
                 .collection<TurnServer>(Collections.TURNSERVERS)
                 .createIndex({ url: 1 }, { unique: true }),
@@ -926,8 +932,7 @@ class Distributor extends EventEmitter.EventEmitter {
                         _id: result.value._id,
                     })
                     return result.value._id
-                }
-                if (result.ok) {
+                } else if (result.ok) {
                     const doc: Omit<SoundCard<ObjectId>, '_id'> = {
                         sampleRate: 48000,
                         sampleRates: [48000],

@@ -415,15 +415,14 @@ const handleSocketClientConnection = async (
             fn?: (error: string | null, id?: ObjectId) => void
         ) => {
             debug(`${user.name}: ${ClientDeviceEvents.SetSoundCard}(${JSON.stringify(payload)})`)
-            if (!verifyPayload(payload, ['audioDriver', 'type', 'label'], fn)) {
-                error(
+            if (!verifyPayload(payload, ['audioDriver', 'type', 'uuid'], fn)) {
+                return error(
                     ClientDeviceEvents.SetSoundCard + ': Invalid payload' + JSON.stringify(payload)
                 )
-                return
             }
-            const { audioDriver, type, label, ...update } = payload
+            const { audioDriver, type, uuid, ...update } = payload
             return distributor
-                .upsertSoundCard(user._id, device._id, audioDriver, type, label, update)
+                .upsertSoundCard(user._id, device._id, audioDriver, type, uuid, update)
                 .then((id: ObjectId) => {
                     if (fn) {
                         return fn(null, id)
@@ -445,7 +444,7 @@ const handleSocketClientConnection = async (
             fn?: (error: string | null, id?: ObjectId) => void
         ) => {
             debug(`${user.name}: ${ClientDeviceEvents.ChangeSoundCard}(${JSON.stringify(payload)})`)
-            if (!verifyPayload(payload, ['_id', 'type', 'label'], fn)) {
+            if (!verifyPayload(payload, ['_id'], fn)) {
                 error(
                     ClientDeviceEvents.SetSoundCard + ': Invalid payload' + JSON.stringify(payload)
                 )
