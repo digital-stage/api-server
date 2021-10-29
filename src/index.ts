@@ -31,7 +31,8 @@ import { Distributor } from './distributor/Distributor'
 
 const { error, warn, info } = useLogger('')
 
-if (REDIS_URL.startsWith('redis')) {
+const redisEnabled = (REDIS_URL ?? '-disabled-').startsWith('redis') // usually `redis://...:6379`
+if (redisEnabled) {
     info(`Using redis at ${REDIS_URL}`)
 } else {
     warn('Not synchronizing via redis - running in standalone mode')
@@ -42,7 +43,7 @@ if (DEBUG_PAYLOAD) {
     warn('Verbose output of socket events ON')
 }
 const io = new UWSProvider(app, {
-    redisUrl: REDIS_URL,
+    redisUrl: redisEnabled ? REDIS_URL : undefined,
     debug: DEBUG_PAYLOAD,
 })
 

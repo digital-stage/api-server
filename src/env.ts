@@ -47,7 +47,7 @@ const variables = cleanEnv(env, {
     TURN_SECRET: str({ default: 'default' }),
 
     // Optional: Redis
-    REDIS_URL: str({ default: '' }),
+    REDIS_URL: str({ default: undefined }),
 
     // Optional: Debugging
     DEBUG_EVENTS: bool({ default: false }),
