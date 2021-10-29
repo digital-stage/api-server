@@ -25,7 +25,7 @@ import dotenvExpand from 'dotenv-expand'
 import * as fs from 'fs'
 import { cleanEnv, str, bool, port } from 'envalid'
 
-const getEnvPath = () => {
+const getEnvPath = (): string | undefined => {
     if (fs.existsSync('.env.local')) return '.env.local'
     if (process.env.NODE_ENV && fs.existsSync(`.env.${process.env.NODE_ENV}`))
         return `.env.${process.env.NODE_ENV}`
@@ -33,7 +33,7 @@ const getEnvPath = () => {
 }
 
 const envPath = getEnvPath()
-const env = dotenvExpand(config({ path: envPath })).parsed
+const env = envPath ? dotenvExpand(config({ path: envPath })).parsed : process.env
 
 const variables = cleanEnv(env, {
     // Required
