@@ -43,7 +43,7 @@ if (DEBUG_PAYLOAD) {
     warn('Verbose output of socket events ON')
 }
 const io = new UWSProvider(app, {
-    redisUrl: redisEnabled ? REDIS_URL : undefined,
+    redisUrl: redisEnabled ? REDIS_URL : null,
     debug: DEBUG_PAYLOAD,
 })
 
