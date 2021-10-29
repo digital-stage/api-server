@@ -24,14 +24,14 @@ import { UWSProvider } from 'teckos'
 import { TemplatedApp, App } from 'teckos/uws'
 import { MongoClient } from 'mongodb'
 import { address } from 'ip'
-import { DEBUG_PAYLOAD, MONGO_CA, MONGO_DB, MONGO_URL, PORT, REDIS_URL, USE_REDIS } from './env'
+import { DEBUG_PAYLOAD, MONGO_CA, MONGO_DB, MONGO_URL, PORT, REDIS_URL } from './env'
 import { useLogger } from './useLogger'
 import { handleSocketConnection } from './socket/handleSocketConnection'
 import { Distributor } from './distributor/Distributor'
 
 const { error, warn, info } = useLogger('')
 
-if (USE_REDIS && REDIS_URL) {
+if (REDIS_URL.startsWith('redis')) {
     info(`Using redis at ${REDIS_URL}`)
 } else {
     warn('Not synchronizing via redis - running in standalone mode')

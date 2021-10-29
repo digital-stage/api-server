@@ -47,7 +47,6 @@ jobs:
           MONGO_URL: ${{ secrets.MONGO_URL }}
           MONGO_DB: ${{ secrets.MONGO_DB }}
           MONGO_CA: ${{ secrets.MONGO_CA }}
-          USE_REDIS: ${{ secrets.USE_REDIS }}
           REDIS_URL: ${{ secrets.REDIS_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           RESTRICT_STAGE_CREATION: ${{ secrets.RESTRICT_STAGE_CREATION }}

@@ -53,8 +53,6 @@ spec:
               value: "$MONGO_DB"
             - name: $MONGO_CA
               value: "$MONGO_CA"
-            - name: USE_REDIS
-              value: "$USE_REDIS"
             - name: REDIS_URL
               value: "$REDIS_URL"
             - name: SENTRY_DSN

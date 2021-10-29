@@ -47,8 +47,7 @@ const variables = cleanEnv(env, {
     TURN_SECRET: str({ default: 'default' }),
 
     // Optional: Redis
-    USE_REDIS: bool({ default: false }),
-    REDIS_URL: str({ default: undefined }),
+    REDIS_URL: str({ default: '' }),
 
     // Optional: Debugging
     DEBUG_EVENTS: bool({ default: false }),
@@ -67,7 +66,6 @@ const {
     API_KEY,
     TURN_SECRET,
     SENTRY_DSN,
-    USE_REDIS,
     DEBUG_PAYLOAD,
     DEBUG_EVENTS,
     RESTRICT_STAGE_CREATION,
@@ -84,7 +82,6 @@ export {
     REDIS_URL,
     MONGO_DB,
     PORT,
-    USE_REDIS,
     DEBUG_PAYLOAD,
     DEBUG_EVENTS,
     AUTH_URL,
