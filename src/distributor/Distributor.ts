@@ -925,14 +925,17 @@ class Distributor extends EventEmitter.EventEmitter {
                 { upsert: false, projection: { _id: 1 } }
             )
             .then((result) => {
+                console.log('upsertSoundCard', result.ok, result.value)
                 if (result.value) {
+                    console.log('UPDATED')
                     // Return updated document
                     this.sendToUser(userId, ServerDeviceEvents.SoundCardChanged, {
                         ...update,
-                        _id: result.value._id,
-                    })
+                        _id: result.value._id.toHexString(),
+                    } as ServerDevicePayloads.SoundCardChanged)
                     return result.value._id
                 } else if (result.ok) {
+                    console.log('CREATING')
                     const doc: Omit<SoundCard<ObjectId>, '_id'> = {
                         sampleRate: 48000,
                         sampleRates: [48000],
@@ -953,16 +956,19 @@ class Distributor extends EventEmitter.EventEmitter {
                     return this._db
                         .collection<SoundCard<ObjectId>>(Collections.SOUND_CARDS)
                         .insertOne(doc)
-                        .then(
-                            (r) =>
-                                ({
-                                    ...doc,
-                                    _id: r.insertedId,
-                                } as SoundCard<ObjectId>)
-                        )
-                        .then((soundCard) => {
-                            this.sendToUser(userId, ServerDeviceEvents.SoundCardAdded, soundCard)
-                            return soundCard._id
+                        .then((insertResult) => {
+                            const payload: SoundCard = {
+                                ...doc,
+                                userId: doc.userId.toHexString(),
+                                deviceId: doc.deviceId.toHexString(),
+                                _id: insertResult.insertedId.toHexString(),
+                            }
+                            this.sendToUser(
+                                userId,
+                                ServerDeviceEvents.SoundCardAdded,
+                                payload as ServerDevicePayloads.SoundCardAdded
+                            )
+                            return insertResult.insertedId
                         })
                 }
                 throw new Error('Could not create sound card')
