@@ -1,0 +1,8 @@
+{
+  "upgrade": true,
+  "reject": [
+    "eslint",
+    "@types/node-fetch",
+    "node-fetch"
+  ]
+}
