@@ -164,10 +164,6 @@ class Distributor extends EventEmitter.EventEmitter {
             this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ audioDriver: 1 }),
             this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ type: 1 }),
             this._db.collection<SoundCard>(Collections.SOUND_CARDS).createIndex({ uuid: 1 }),
-
-            this._db
-                .collection<TurnServer>(Collections.TURNSERVERS)
-                .createIndex({ url: 1 }, { unique: true }),
         ])
 
     public cleanUp = (serverAddress: string): Promise<unknown> => {
@@ -294,6 +290,7 @@ class Distributor extends EventEmitter.EventEmitter {
                             this.emit(ServerDeviceEvents.TurnServersChanged, urls)
                             return this.sendToAll(ServerDeviceEvents.TurnServersChanged, urls)
                         })
+                        .catch((err) => error(err))
                 }
                 return router
             })
