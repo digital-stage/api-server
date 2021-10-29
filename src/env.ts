@@ -29,7 +29,7 @@ const getEnvPath = (): string | undefined => {
     if (fs.existsSync('.env.local')) return '.env.local'
     if (process.env.NODE_ENV && fs.existsSync(`.env.${process.env.NODE_ENV}`))
         return `.env.${process.env.NODE_ENV}`
-    return '.env'
+    if (fs.existsSync('.env')) return undefined
 }
 
 const envPath = getEnvPath()
