@@ -72,7 +72,7 @@ const {
 } = variables
 
 // eslint-disable-next-line no-console
-console.info(`Loaded env from ${envPath}`)
+console.info(`Loaded env from '${envPath}'`)
 // eslint-disable-next-line no-console
 console.info(`Using auth server at ${AUTH_URL}`)
 

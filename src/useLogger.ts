@@ -26,9 +26,11 @@ import * as uncaught from 'uncaught'
 import * as Tracing from '@sentry/tracing'
 import { SENTRY_DSN } from './env'
 import pino from 'pino'
+import ecsFormat from '@elastic/ecs-pino-format'
 
 // create pino loggger
 const logger = pino({
+    ...ecsFormat(),
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
 })
 

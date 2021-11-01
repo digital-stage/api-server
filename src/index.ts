@@ -42,6 +42,8 @@ const app: TemplatedApp = App()
 if (DEBUG_PAYLOAD) {
     warn('Verbose output of socket events ON')
 }
+
+info('Creating UWS...')
 const io = new UWSProvider(app, {
     redisUrl: redisEnabled ? REDIS_URL : null,
     debug: DEBUG_PAYLOAD,
@@ -51,6 +53,7 @@ app.get('/beat', (res) => {
     res.end('Boom!')
 })
 
+info('Creating MongoDb Client...')
 let mongoClient = new MongoClient(MONGO_URL, {
     sslValidate: !!MONGO_CA,
     sslCA: MONGO_CA,
