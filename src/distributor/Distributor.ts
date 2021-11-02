@@ -61,7 +61,7 @@ import { generateColor } from '../utils/generateColor'
 import { getDistance } from '../utils/getDistance'
 import { Collections } from './Collections'
 import { TurnServer } from '../types/TurnServer'
-import { diff } from '../utils/diff'
+import { diff } from 'json-diff-ts'
 
 const { error, debug, warn } = useLogger('distributor')
 
@@ -926,7 +926,8 @@ class Distributor extends EventEmitter.EventEmitter {
                 console.log('upsertSoundCard', result.ok, result.value)
                 if (result.value) {
                     // Return updated document
-                    const determinedUpdate = diff({ ...result.value }, { ...update })
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call
+                    const determinedUpdate = diff(result.value, update)
                     console.log(determinedUpdate)
                     this.sendToUser(userId, ServerDeviceEvents.SoundCardChanged, {
                         ...determinedUpdate,
