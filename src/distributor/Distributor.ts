@@ -61,6 +61,7 @@ import { generateColor } from '../utils/generateColor'
 import { getDistance } from '../utils/getDistance'
 import { Collections } from './Collections'
 import { TurnServer } from '../types/TurnServer'
+import { diff } from 'src/utils/diff'
 
 const { error, debug, warn } = useLogger('distributor')
 
@@ -919,20 +920,18 @@ class Distributor extends EventEmitter.EventEmitter {
                 {
                     $set: update,
                 },
-                { upsert: false, projection: { _id: 1 } }
+                { upsert: false, returnDocument: 'before' }
             )
             .then((result) => {
                 console.log('upsertSoundCard', result.ok, result.value)
                 if (result.value) {
-                    console.log('UPDATED')
                     // Return updated document
                     this.sendToUser(userId, ServerDeviceEvents.SoundCardChanged, {
-                        ...update,
+                        ...diff({ ...result.value }, { ...update }),
                         _id: result.value._id.toHexString(),
                     } as ServerDevicePayloads.SoundCardChanged)
                     return result.value._id
                 } else if (result.ok) {
-                    console.log('CREATING')
                     const doc: Omit<SoundCard<ObjectId>, '_id'> = {
                         sampleRate: 48000,
                         sampleRates: [48000],
