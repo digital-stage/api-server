@@ -62,6 +62,7 @@ import { getDistance } from '../utils/getDistance'
 import { Collections } from './Collections'
 import { TurnServer } from '../types/TurnServer'
 import { diff } from 'json-diff-ts'
+import { getDifference } from '../utils/getDifference'
 
 const { error, debug, warn } = useLogger('distributor')
 
@@ -927,10 +928,8 @@ class Distributor extends EventEmitter.EventEmitter {
                 if (result.value) {
                     // Return updated document
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call
-                    const determinedUpdate = diff(result.value, update)
-                    console.log(determinedUpdate)
                     this.sendToUser(userId, ServerDeviceEvents.SoundCardChanged, {
-                        ...determinedUpdate,
+                        ...getDifference(result.value, update),
                         _id: result.value._id.toHexString(),
                     } as ServerDevicePayloads.SoundCardChanged)
                     return result.value._id
