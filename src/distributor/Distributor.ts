@@ -926,8 +926,10 @@ class Distributor extends EventEmitter.EventEmitter {
                 console.log('upsertSoundCard', result.ok, result.value)
                 if (result.value) {
                     // Return updated document
+                    const determinedUpdate = diff({ ...result.value }, { ...update })
+                    console.log(determinedUpdate)
                     this.sendToUser(userId, ServerDeviceEvents.SoundCardChanged, {
-                        ...diff({ ...result.value }, { ...update }),
+                        ...determinedUpdate,
                         _id: result.value._id.toHexString(),
                     } as ServerDevicePayloads.SoundCardChanged)
                     return result.value._id
