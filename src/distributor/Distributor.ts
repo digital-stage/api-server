@@ -61,7 +61,6 @@ import { generateColor } from '../utils/generateColor'
 import { getDistance } from '../utils/getDistance'
 import { Collections } from './Collections'
 import { TurnServer } from '../types/TurnServer'
-import { diff } from 'json-diff-ts'
 import { getDifference } from '../utils/getDifference'
 
 const { error, debug, warn } = useLogger('distributor')
