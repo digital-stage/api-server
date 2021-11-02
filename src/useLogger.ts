@@ -29,10 +29,11 @@ import pino from 'pino'
 import ecsFormat from '@elastic/ecs-pino-format'
 
 // create pino loggger
-const logger = pino({
+const options: pino.LoggerOptions = {
     ...ecsFormat(),
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-})
+}
+const logger = pino(options)
 
 uncaught.start()
 
