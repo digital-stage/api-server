@@ -944,6 +944,7 @@ class Distributor extends EventEmitter.EventEmitter {
                         softwareLatency: null,
                         inputBuffer: 5,
                         outputBuffer: 5,
+                        frameSize: 256,
                         label: uuid,
                         ...update,
                         userId,
