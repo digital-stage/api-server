@@ -3338,6 +3338,13 @@ class Distributor extends EventEmitter.EventEmitter {
         this.readStageDevice(stageDeviceId)
             .then((stageDevice) => this.readDevice(stageDevice.deviceId))
             .then((device) => {
+                if (!device) {
+                    throw new Error(
+                        'Could not send to stage device ' +
+                            stageDeviceId.toHexString() +
+                            ' since the associated device is missing'
+                    )
+                }
                 const id = device._id.toHexString()
                 if (DEBUG_EVENTS) {
                     if (DEBUG_PAYLOAD) {
