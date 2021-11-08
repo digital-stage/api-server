@@ -31,7 +31,7 @@ import { Distributor } from '../distributor/Distributor'
 import { useAuth } from '../auth/useAuth'
 import { handleSocketRouterConnection } from './handleSocketRouterConnection'
 
-const { error, warn, debug, trace } = useLogger('socket')
+const { error, warn, trace } = useLogger('socket')
 
 const getIP = (socket: ITeckosSocket): string => {
     const uwsSocket = socket as UWSSocket
