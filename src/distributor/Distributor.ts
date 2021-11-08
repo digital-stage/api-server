@@ -618,6 +618,8 @@ class Distributor extends EventEmitter.EventEmitter {
             online: false,
             useP2P: false,
             egoGain: 1,
+            audioEngine: 'webaudio',
+            buffer: 5000,
             ovRawMode: false,
             ovRenderISM: false,
             ovP2p: true,
@@ -945,6 +947,7 @@ class Distributor extends EventEmitter.EventEmitter {
                         inputBuffer: 5,
                         outputBuffer: 5,
                         frameSize: 256,
+                        audioEngine: 'webaudio',
                         label: uuid,
                         ...update,
                         userId,
@@ -1296,6 +1299,7 @@ class Distributor extends EventEmitter.EventEmitter {
         return this._db
             .collection<Group<ObjectId>>(Collections.GROUPS)
             .insertOne({
+                ...DefaultThreeDimensionalProperties,
                 ...initial,
                 color,
                 _id: undefined,
@@ -1408,8 +1412,9 @@ class Distributor extends EventEmitter.EventEmitter {
             .then(
                 (result) =>
                     ({
-                        _id: result.insertedId,
+                        ...DefaultThreeDimensionalProperties,
                         ...initial,
+                        _id: result.insertedId,
                     } as StageMember<ObjectId>)
             )
             .then((stageMember) => {
@@ -1577,6 +1582,7 @@ class Distributor extends EventEmitter.EventEmitter {
             })
         //if (order === -1) throw new Error(ErrorCodes.MaxMembersReached)
         const doc = {
+            ...DefaultThreeDimensionalProperties,
             ...initial,
             order,
             _id: undefined,
