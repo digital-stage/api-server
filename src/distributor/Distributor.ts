@@ -1297,6 +1297,7 @@ class Distributor extends EventEmitter.EventEmitter {
         return this._db
             .collection<Group<ObjectId>>(Collections.GROUPS)
             .insertOne({
+                ...DefaultThreeDimensionalProperties,
                 ...initial,
                 color,
                 _id: undefined,
@@ -1409,8 +1410,9 @@ class Distributor extends EventEmitter.EventEmitter {
             .then(
                 (result) =>
                     ({
-                        _id: result.insertedId,
+                        ...DefaultThreeDimensionalProperties,
                         ...initial,
+                        _id: result.insertedId,
                     } as StageMember<ObjectId>)
             )
             .then((stageMember) => {
@@ -1578,6 +1580,7 @@ class Distributor extends EventEmitter.EventEmitter {
             })
         //if (order === -1) throw new Error(ErrorCodes.MaxMembersReached)
         const doc = {
+            ...DefaultThreeDimensionalProperties,
             ...initial,
             order,
             _id: undefined,
@@ -3333,6 +3336,13 @@ class Distributor extends EventEmitter.EventEmitter {
         this.readStageDevice(stageDeviceId)
             .then((stageDevice) => this.readDevice(stageDevice.deviceId))
             .then((device) => {
+                if (!device) {
+                    throw new Error(
+                        'Could not send to stage device ' +
+                            stageDeviceId.toHexString() +
+                            ' since the associated device is missing'
+                    )
+                }
                 const id = device._id.toHexString()
                 if (DEBUG_EVENTS) {
                     if (DEBUG_PAYLOAD) {

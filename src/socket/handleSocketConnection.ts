@@ -31,7 +31,7 @@ import { Distributor } from '../distributor/Distributor'
 import { useAuth } from '../auth/useAuth'
 import { handleSocketRouterConnection } from './handleSocketRouterConnection'
 
-const { error, warn, debug, trace } = useLogger('socket')
+const { error, warn, trace } = useLogger('socket')
 
 const getIP = (socket: ITeckosSocket): string => {
     const uwsSocket = socket as UWSSocket
@@ -71,7 +71,6 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
     socket.on(ClientDeviceEvents.ConnectWithToken, (payload: Payloads.ConnectWithToken) => {
         const { token, device } = payload
         if (token) {
-            debug('New connection with token')
             const soundCardId =
                 device.soundCardId && typeof device.soundCardId === 'string'
                     ? new ObjectId(device.soundCardId)
@@ -94,10 +93,9 @@ const handleSocketConnection = (distributor: Distributor, socket: ITeckosSocket)
                         error(e)
                     })
                 )
-                .catch((e: Error) => {
-                    warn(`Attempt to connect with invalid token from IP ${getIP(socket)}`)
+                .catch(() => {
+                    warn(`Attempt to connect from IP ${getIP(socket)} with invalid token ${token}`)
                     socket.disconnect()
-                    error(e)
                 })
         }
         warn(`Attempt to connect without token from IP ${getIP(socket)}`)

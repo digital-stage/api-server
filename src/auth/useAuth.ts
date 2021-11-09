@@ -29,7 +29,7 @@ import { Distributor } from '../distributor/Distributor'
 import { useLogger } from '../useLogger'
 import { AuthUser } from './AuthUser'
 
-const { debug, error } = useLogger('auth')
+const { debug } = useLogger('auth')
 
 const getAuthUserByToken = (token: string): Promise<AuthUser> =>
     fetch(`${AUTH_URL}/profile`, {
@@ -72,9 +72,7 @@ const useAuth = (
                     return user
                 })
             )
-            .catch((e) => {
-                error('Invalid token delivered')
-                error(e)
+            .catch(() => {
                 throw new Error(ErrorCodes.InvalidCredentials)
             })
     }
