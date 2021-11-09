@@ -2612,6 +2612,7 @@ class Distributor extends EventEmitter.EventEmitter {
                             (
                                 remoteAudioTrack
                             ): Omit<CustomAudioTrackPosition<ObjectId>, '_id'> => ({
+                                ...DefaultThreeDimensionalProperties,
                                 x: remoteAudioTrack.x,
                                 y: remoteAudioTrack.y,
                                 z: remoteAudioTrack.z,
