@@ -602,6 +602,7 @@ class Distributor extends EventEmitter.EventEmitter {
         const doc: Device<ObjectId> & { _id?: ObjectId } = {
             uuid: null,
             type: 'browser',
+            audioEngine: 'webaudio',
             requestSession: false,
             canAudio: false,
             canVideo: false,
@@ -616,8 +617,9 @@ class Distributor extends EventEmitter.EventEmitter {
             balance: 0.5,
             name: '',
             online: false,
-            useP2P: false,
+            useP2P: true,
             egoGain: 1,
+            buffer: 4096,
             ovRawMode: false,
             ovRenderISM: false,
             ovP2p: true,
@@ -934,6 +936,7 @@ class Distributor extends EventEmitter.EventEmitter {
                     return result.value._id
                 } else if (result.ok) {
                     const doc: Omit<SoundCard<ObjectId>, '_id'> = {
+                        audioEngine: 'webaudio',
                         sampleRate: 48000,
                         sampleRates: [48000],
                         isDefault: false,
@@ -942,9 +945,7 @@ class Distributor extends EventEmitter.EventEmitter {
                         periodSize: 96,
                         numPeriods: 2,
                         softwareLatency: null,
-                        inputBuffer: 5,
-                        outputBuffer: 5,
-                        frameSize: 256,
+                        bufferSize: 512,
                         label: uuid,
                         ...update,
                         userId,
