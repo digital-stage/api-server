@@ -554,7 +554,7 @@ const handleSocketClientConnection = async (
             payload: ClientDevicePayloads.DecodeInviteCode,
             fn: (
                 error: string | null,
-                result?: { stageId: ObjectId; groupId: ObjectId; code: string }
+                result?: { stageId: ObjectId; groupId?: ObjectId; code: string }
             ) => void
         ) =>
             distributor
