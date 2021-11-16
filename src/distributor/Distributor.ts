@@ -1052,9 +1052,9 @@ class Distributor extends EventEmitter.EventEmitter {
             })
 
     /* STAGE */
-    generateInviteCode = (stageId: ObjectId, groupId: ObjectId): Promise<string> => {
+    generateInviteCode = (stageId: ObjectId, groupId?: ObjectId): Promise<string> => {
         return this._db
-            .collection<{ stageId: ObjectId; groupId: ObjectId; code: string }>(
+            .collection<{ stageId: ObjectId; groupId?: ObjectId; code: string }>(
                 Collections.INVITE_LINKS
             )
             .findOne({
@@ -1069,7 +1069,7 @@ class Distributor extends EventEmitter.EventEmitter {
             })
     }
 
-    resetInviteCode = async (stageId: ObjectId, groupId: ObjectId): Promise<string> => {
+    resetInviteCode = async (stageId: ObjectId, groupId?: ObjectId): Promise<string> => {
         // Generate short UUID
         let isUnique = false
         let code: string
@@ -1081,7 +1081,7 @@ class Distributor extends EventEmitter.EventEmitter {
                 .collection<{
                     _id: ObjectId
                     stageId: ObjectId
-                    groupId: ObjectId
+                    groupId?: ObjectId
                     code: string
                 }>(Collections.INVITE_LINKS)
                 .findOne({ code })
@@ -1089,7 +1089,7 @@ class Distributor extends EventEmitter.EventEmitter {
             tries++
         } while (!isUnique && tries < 500)
         return this._db
-            .collection<{ stageId: ObjectId; groupId: ObjectId; code: string }>(
+            .collection<{ stageId: ObjectId; groupId?: ObjectId; code: string }>(
                 Collections.INVITE_LINKS
             )
             .updateOne(
@@ -1113,9 +1113,9 @@ class Distributor extends EventEmitter.EventEmitter {
 
     decodeInviteCode = (
         code: string
-    ): Promise<{ stageId: ObjectId; groupId: ObjectId; code: string }> =>
+    ): Promise<{ stageId: ObjectId; groupId?: ObjectId; code: string }> =>
         this._db
-            .collection<{ stageId: ObjectId; groupId: ObjectId; code: string }>(
+            .collection<{ stageId: ObjectId; groupId?: ObjectId; code: string }>(
                 Collections.INVITE_LINKS
             )
             .findOne({ code })
@@ -2825,9 +2825,6 @@ class Distributor extends EventEmitter.EventEmitter {
 
         const wasUserAlreadyInStage = !!stageMember
         if (!stageMember) {
-            if (!groupId) {
-                throw new Error(ErrorCodes.GroupIdMissing)
-            }
             stageMember = await this.createStageMember({
                 userId: user._id,
                 stageId: stage._id,
