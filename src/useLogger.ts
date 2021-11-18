@@ -31,7 +31,7 @@ import ecsFormat from '@elastic/ecs-pino-format'
 // create pino loggger
 const options: pino.LoggerOptions = {
     ...ecsFormat(),
-    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+    level: !!process.env.LOG_LEVEL ? process.env.LOG_LEVEL : 'info',
 }
 const logger = pino(options)
 
